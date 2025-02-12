@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast Student Attendance Scanner</title>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        #scanner-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .scanner {
+            border: 2px solid #333;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        video {
+            width: 300px;
+            height: 200px;
+            border: 1px solid black;
+        }
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Fast Student Attendance Scanner</h2>
+
+    <!-- Scanners for multiple people -->
+    <div id="scanner-container">
+        <div class="scanner">
+            <h3>Scanner 1</h3>
+            <video id="video1"></video>
+            <p><strong>Scanned:</strong> <span id="result1">None</span></p>
+        </div>
+        <div class="scanner">
+            <h3>Scanner 2</h3>
+            <video id="video2"></video>
+            <p><strong>Scanned:</strong> <span id="result2">None</span></p>
+        </div>
+        <div class="scanner">
+            <h3>Scanner 3</h3>
+            <video id="video3"></video>
+            <p><strong>Scanned:</strong> <span id="result3">None</span></p>
+        </div>
+    </div>
+
+    <!-- Attendance List -->
+    <h3>Attendance List</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Enrollment No</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody id="attendance-table">
+        </tbody>
+    </table>
+
+    <button onclick="saveToExcel()">Download Excel</button>
+
+    <script>
+        let scannedData = [];
+
+        // Function to start scanner for each device
+        function startScanner(videoId, resultId) {
+            const codeReader = new ZXing.BrowserBarcodeReader();
+            codeReader.decodeFromVideoDevice(null, videoId, (result, err) => {
+                if (result) {
+                    let enrollmentNo = result.text;
+                    document.getElementById(resultId).innerText = enrollmentNo;
+                    
+                    // Add data to table
+                    let timestamp = new Date().toLocaleString();
+                    scannedData.push([enrollmentNo, timestamp]);
+                    let row = `<tr><td>${enrollmentNo}</td><td>${timestamp}</td></tr>`;
+                    document.getElementById("attendance-table").innerHTML += row;
+                }
+            });
+        }
+
+        // Start multiple scanners
+        startScanner("video1", "result1");
+        startScanner("video2", "result2");
+        startScanner("video3", "result3");
+
+        // Save to Excel function
+        function saveToExcel() {
+            let ws = XLSX.utils.aoa_to_sheet([["Enrollment No", "Timestamp"], ...scannedData]);
+            let wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+            XLSX.writeFile(wb, "Student_Attendance.xlsx");
+        }
+    </script>
+
+</body>
+</html>
