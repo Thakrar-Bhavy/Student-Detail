@@ -22,8 +22,9 @@
             border-radius: 10px;
         }
         video {
-            width: 300px;
-            height: 200px;
+            width: 100%;
+            max-width: 400px;
+            height: auto;
             border: 1px solid black;
         }
         table {
@@ -60,7 +61,7 @@
     <div id="scanner-container">
         <div class="scanner">
             <h3>Scanner</h3>
-            <video id="video"></video>
+            <video id="video" autoplay playsinline></video>
             <p><strong>Scanned:</strong> <span id="result">None</span></p>
         </div>
     </div>
@@ -94,34 +95,42 @@
 
         async function startScanner() {
             const codeReader = new ZXing.BrowserMultiFormatReader();
-            const videoInputDevices = await codeReader.listVideoInputDevices();
-            if (videoInputDevices.length === 0) {
-                alert("No camera found!");
-                return;
-            }
 
-            codeReader.decodeFromVideoDevice(videoInputDevices[0].deviceId, "video", (result, err) => {
-                if (result) {
-                    let enrollmentNo = result.text;
-                    if (![...scannedData].some(entry => entry.startsWith(enrollmentNo))) {
-                        let timestamp = new Date().toLocaleString();
-                        scannedData.add(`${enrollmentNo}|${timestamp}`);
-                        localStorage.setItem("scannedData", JSON.stringify([...scannedData]));
+            // Select back camera
+            const constraints = {
+                video: { facingMode: { exact: "environment" } } // Forces back camera on mobile
+            };
 
-                        document.getElementById("result").innerText = enrollmentNo;
-                        updateTable();
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then((stream) => {
+                    document.getElementById("video").srcObject = stream;
+                    return codeReader.decodeFromStream(stream, "video", (result, err) => {
+                        if (result) {
+                            let enrollmentNo = result.text;
+                            if (![...scannedData].some(entry => entry.startsWith(enrollmentNo))) {
+                                let timestamp = new Date().toLocaleString();
+                                scannedData.add(`${enrollmentNo}|${timestamp}`);
+                                localStorage.setItem("scannedData", JSON.stringify([...scannedData]));
 
-                        // Send data to Google Sheets
-                        fetch(googleSheetUrl, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ enrollmentNo, timestamp })
-                        }).then(response => response.text())
-                          .then(data => console.log("Google Sheets response:", data))
-                          .catch(error => console.error("Error:", error));
-                    }
-                }
-            });
+                                document.getElementById("result").innerText = enrollmentNo;
+                                updateTable();
+
+                                // Send data to Google Sheets
+                                fetch(googleSheetUrl, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ enrollmentNo, timestamp })
+                                }).then(response => response.text())
+                                  .then(data => console.log("Google Sheets response:", data))
+                                  .catch(error => console.error("Error:", error));
+                            }
+                        }
+                    });
+                })
+                .catch((err) => {
+                    console.error("Error accessing camera:", err);
+                    alert("Camera access denied. Please enable camera permissions.");
+                });
         }
 
         function saveToExcel() {
