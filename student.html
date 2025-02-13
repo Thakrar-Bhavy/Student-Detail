@@ -15,8 +15,6 @@
         #scanner-container {
             display: flex;
             justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap;
         }
         .scanner {
             border: 2px solid #333;
@@ -59,26 +57,14 @@
 
     <h2>Fast Student Attendance Scanner</h2>
 
-    <!-- Scanners for multiple people -->
     <div id="scanner-container">
         <div class="scanner">
-            <h3>Scanner 1</h3>
-            <video id="video1"></video>
-            <p><strong>Scanned:</strong> <span id="result1">None</span></p>
-        </div>
-        <div class="scanner">
-            <h3>Scanner 2</h3>
-            <video id="video2"></video>
-            <p><strong>Scanned:</strong> <span id="result2">None</span></p>
-        </div>
-        <div class="scanner">
-            <h3>Scanner 3</h3>
-            <video id="video3"></video>
-            <p><strong>Scanned:</strong> <span id="result3">None</span></p>
+            <h3>Scanner</h3>
+            <video id="video"></video>
+            <p><strong>Scanned:</strong> <span id="result">None</span></p>
         </div>
     </div>
 
-    <!-- Attendance List -->
     <h3>Attendance List</h3>
     <table>
         <thead>
@@ -87,40 +73,51 @@
                 <th>Timestamp</th>
             </tr>
         </thead>
-        <tbody id="attendance-table">
-        </tbody>
+        <tbody id="attendance-table"></tbody>
     </table>
 
     <button onclick="saveToExcel()">Download Excel</button>
 
     <script>
-        let scannedData = [];
+        let scannedData = new Set();
+        const googleSheetUrl = "https://script.google.com/macros/s/AKfycbz2uRzvuoNKz_Bhvmq9Q_Jqrp2D11Z8tkM8d4I9_lp_VsxNSAWnp1Ce6_d2HE0eMLN2JQ/exec"; // Replace with your Google Apps Script Web App URL
 
-        // Function to start scanner for each device
-        function startScanner(videoId, resultId) {
-            const codeReader = new ZXing.BrowserBarcodeReader();
-            codeReader.decodeFromVideoDevice(null, videoId, (result, err) => {
+        async function startScanner() {
+            const codeReader = new ZXing.BrowserMultiFormatReader();
+            const videoInputDevices = await codeReader.listVideoInputDevices();
+            if (videoInputDevices.length === 0) {
+                alert("No camera found!");
+                return;
+            }
+
+            codeReader.decodeFromVideoDevice(videoInputDevices[0].deviceId, "video", (result, err) => {
                 if (result) {
                     let enrollmentNo = result.text;
-                    document.getElementById(resultId).innerText = enrollmentNo;
-                    
-                    // Add data to table
-                    let timestamp = new Date().toLocaleString();
-                    scannedData.push([enrollmentNo, timestamp]);
-                    let row = `<tr><td>${enrollmentNo}</td><td>${timestamp}</td></tr>`;
-                    document.getElementById("attendance-table").innerHTML += row;
+                    if (!scannedData.has(enrollmentNo)) {
+                        scannedData.add(enrollmentNo);
+                        document.getElementById("result").innerText = enrollmentNo;
+
+                        let timestamp = new Date().toLocaleString();
+                        let row = `<tr><td>${enrollmentNo}</td><td>${timestamp}</td></tr>`;
+                        document.getElementById("attendance-table").innerHTML += row;
+
+                        // Send data to Google Sheets
+                        fetch(googleSheetUrl, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ enrollmentNo, timestamp })
+                        }).then(response => response.text())
+                          .then(data => console.log("Google Sheets response:", data))
+                          .catch(error => console.error("Error:", error));
+                    }
                 }
             });
         }
 
-        // Start multiple scanners
-        startScanner("video1", "result1");
-        startScanner("video2", "result2");
-        startScanner("video3", "result3");
+        startScanner();
 
-        // Save to Excel function
         function saveToExcel() {
-            let ws = XLSX.utils.aoa_to_sheet([["Enrollment No", "Timestamp"], ...scannedData]);
+            let ws = XLSX.utils.aoa_to_sheet([["Enrollment No", "Timestamp"], ...Array.from(scannedData).map(id => [id, new Date().toLocaleString()])]);
             let wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Attendance");
             XLSX.writeFile(wb, "Student_Attendance.xlsx");
