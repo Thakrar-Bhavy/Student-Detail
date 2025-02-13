@@ -83,6 +83,7 @@
     <script>
         let scannedData = new Set(JSON.parse(localStorage.getItem("scannedData")) || []);
         const googleSheetUrl = "YOUR_WEB_APP_URL"; // Replace with your Google Apps Script Web App URL
+        let lastScannedTime = 0; // Prevents duplicate rapid scans
 
         function updateTable() {
             document.getElementById("attendance-table").innerHTML = "";
@@ -94,20 +95,28 @@
         }
 
         async function startScanner() {
-            const codeReader = new ZXing.BrowserMultiFormatReader();
+            const codeReader = new ZXing.BrowserBarcodeReader(100); // Scan every 100ms (faster)
 
-            // Select back camera
             const constraints = {
-                video: { facingMode: { exact: "environment" } } // Forces back camera on mobile
+                video: {
+                    facingMode: { exact: "environment" }, // Force back camera
+                    width: { ideal: 1280 }, // Use high resolution for better detection
+                    height: { ideal: 720 }
+                }
             };
 
             navigator.mediaDevices.getUserMedia(constraints)
                 .then((stream) => {
                     document.getElementById("video").srcObject = stream;
+
                     return codeReader.decodeFromStream(stream, "video", (result, err) => {
                         if (result) {
                             let enrollmentNo = result.text;
-                            if (![...scannedData].some(entry => entry.startsWith(enrollmentNo))) {
+                            let now = Date.now();
+                            
+                            // Prevent duplicate scanning within 1 second
+                            if (now - lastScannedTime > 1000 && ![...scannedData].some(entry => entry.startsWith(enrollmentNo))) {
+                                lastScannedTime = now;
                                 let timestamp = new Date().toLocaleString();
                                 scannedData.add(`${enrollmentNo}|${timestamp}`);
                                 localStorage.setItem("scannedData", JSON.stringify([...scannedData]));
