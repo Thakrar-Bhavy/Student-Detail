@@ -77,10 +77,20 @@
     </table>
 
     <button onclick="saveToExcel()">Download Excel</button>
+    <button onclick="clearAttendance()">Clear Data</button>
 
     <script>
-        let scannedData = new Set();
-        const googleSheetUrl = "https://script.google.com/macros/s/AKfycbz2uRzvuoNKz_Bhvmq9Q_Jqrp2D11Z8tkM8d4I9_lp_VsxNSAWnp1Ce6_d2HE0eMLN2JQ/exec"; // Replace with your Google Apps Script Web App URL
+        let scannedData = new Set(JSON.parse(localStorage.getItem("scannedData")) || []);
+        const googleSheetUrl = "YOUR_WEB_APP_URL"; // Replace with your Google Apps Script Web App URL
+
+        function updateTable() {
+            document.getElementById("attendance-table").innerHTML = "";
+            scannedData.forEach(item => {
+                let [enrollmentNo, timestamp] = item.split("|");
+                let row = `<tr><td>${enrollmentNo}</td><td>${timestamp}</td></tr>`;
+                document.getElementById("attendance-table").innerHTML += row;
+            });
+        }
 
         async function startScanner() {
             const codeReader = new ZXing.BrowserMultiFormatReader();
@@ -93,13 +103,13 @@
             codeReader.decodeFromVideoDevice(videoInputDevices[0].deviceId, "video", (result, err) => {
                 if (result) {
                     let enrollmentNo = result.text;
-                    if (!scannedData.has(enrollmentNo)) {
-                        scannedData.add(enrollmentNo);
-                        document.getElementById("result").innerText = enrollmentNo;
-
+                    if (![...scannedData].some(entry => entry.startsWith(enrollmentNo))) {
                         let timestamp = new Date().toLocaleString();
-                        let row = `<tr><td>${enrollmentNo}</td><td>${timestamp}</td></tr>`;
-                        document.getElementById("attendance-table").innerHTML += row;
+                        scannedData.add(`${enrollmentNo}|${timestamp}`);
+                        localStorage.setItem("scannedData", JSON.stringify([...scannedData]));
+
+                        document.getElementById("result").innerText = enrollmentNo;
+                        updateTable();
 
                         // Send data to Google Sheets
                         fetch(googleSheetUrl, {
@@ -114,14 +124,24 @@
             });
         }
 
-        startScanner();
-
         function saveToExcel() {
-            let ws = XLSX.utils.aoa_to_sheet([["Enrollment No", "Timestamp"], ...Array.from(scannedData).map(id => [id, new Date().toLocaleString()])]);
+            let ws = XLSX.utils.aoa_to_sheet([["Enrollment No", "Timestamp"], ...Array.from(scannedData).map(item => item.split("|"))]);
             let wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Attendance");
             XLSX.writeFile(wb, "Student_Attendance.xlsx");
         }
+
+        function clearAttendance() {
+            if (confirm("Are you sure you want to clear all attendance data?")) {
+                scannedData.clear();
+                localStorage.removeItem("scannedData");
+                updateTable();
+            }
+        }
+
+        // Restore table on page load
+        updateTable();
+        startScanner();
     </script>
 
 </body>
