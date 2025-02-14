@@ -82,7 +82,9 @@
 
     <script>
         let scannedData = new Set(JSON.parse(localStorage.getItem("scannedData")) || []);
-        const googleSheetUrl = "YOUR_WEB_APP_URL"; // Replace with your Google Apps Script Web App URL
+        const googleSheetUrl = "YOUR_WEB_APP_URL";
+        const codeReader = new ZXing.BrowserMultiFormatReader();
+        const videoElement = document.getElementById("video");
 
         function updateTable() {
             document.getElementById("attendance-table").innerHTML = "";
@@ -94,42 +96,35 @@
         }
 
         async function startScanner() {
-            const codeReader = new ZXing.BrowserMultiFormatReader();
-            const constraints = {
-                video: { facingMode: { exact: "environment" } }
-            };
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                videoElement.srcObject = stream;
+                scanBarcode();
+            } catch (err) {
+                console.error("Error accessing camera:", err);
+                alert("Camera access denied. Please enable camera permissions.");
+            }
+        }
 
-            navigator.mediaDevices.getUserMedia(constraints)
-                .then((stream) => {
-                    document.getElementById("video").srcObject = stream;
-                    return codeReader.decodeFromStream(stream, "video", (result, err) => {
-                        if (result) {
-                            let enrollmentNo = result.text.trim();
-                            if (/^\d{12,}$/.test(enrollmentNo) && ![...scannedData].some(entry => entry.startsWith(enrollmentNo))) {
-                                let timestamp = new Date().toLocaleString();
-                                scannedData.add(`${enrollmentNo}|${timestamp}`);
-                                localStorage.setItem("scannedData", JSON.stringify([...scannedData]));
+        function scanBarcode() {
+            codeReader.decodeFromVideoDevice(undefined, videoElement, (result, err) => {
+                if (result) {
+                    let enrollmentNo = result.text.trim();
+                    if (/^\d{12,}$/.test(enrollmentNo) && !scannedData.has(enrollmentNo)) {
+                        let timestamp = new Date().toLocaleString();
+                        scannedData.add(`${enrollmentNo}|${timestamp}`);
+                        localStorage.setItem("scannedData", JSON.stringify([...scannedData]));
+                        document.getElementById("result").innerText = enrollmentNo;
+                        updateTable();
 
-                                document.getElementById("result").innerText = enrollmentNo;
-                                updateTable();
-
-                                fetch(googleSheetUrl, {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ enrollmentNo, timestamp })
-                                }).then(response => response.text())
-                                  .then(data => console.log("Google Sheets response:", data))
-                                  .catch(error => console.error("Error:", error));
-                            } else {
-                                alert("Invalid Enrollment Number. Must be at least 12 digits and contain only numbers.");
-                            }
-                        }
-                    });
-                })
-                .catch((err) => {
-                    console.error("Error accessing camera:", err);
-                    alert("Camera access denied. Please enable camera permissions.");
-                });
+                        fetch(googleSheetUrl, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ enrollmentNo, timestamp })
+                        }).catch(error => console.error("Error sending data to Google Sheets:", error));
+                    }
+                }
+            });
         }
 
         function saveToExcel() {
