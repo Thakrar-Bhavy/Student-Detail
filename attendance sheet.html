@@ -9,7 +9,7 @@
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
         #scanner-container { display: flex; justify-content: center; }
-        .scanner { border: 2px solid #333; padding: 10px; border-radius: 10px;height: 50%; }
+        .scanner { border: 2px solid #333; padding: 10px; border-radius: 10px; height: 50%; }
         video { width: 100%; max-width: 400px; height: auto; border: 1px solid black; }
         table { width: 80%; margin: 20px auto; border-collapse: collapse; }
         th, td { border: 1px solid black; padding: 8px; }
@@ -21,16 +21,16 @@
 <body>
 
     <h2>Fast Student Attendance Scanner</h2>
-
-    <!-- Upload Excel File -->
     <input type="file" id="uploadExcel" accept=".xlsx" onchange="loadExcel(event)">
     <p><strong>Excel Check: </strong><span id="checkStatus">Not checked</span></p>
-
+    
     <div id="scanner-container">
         <div class="scanner">
             <h3>Scanner</h3>
             <video id="video" autoplay playsinline></video>
             <p><strong>Scanned:</strong> <span id="result">None</span></p>
+            <button onclick="toggleCamera()">Switch Camera</button>
+            <button onclick="toggleFlashlight()">Toggle Flashlight</button>
         </div>
     </div>
 
@@ -50,7 +50,10 @@
 
     <script>
         let scannedData = new Map(JSON.parse(localStorage.getItem("scannedData")) || []);
-        let excelEnrollmentNumbers = new Set(); // Store Excel enrollment numbers
+        let excelEnrollmentNumbers = new Set();
+        let currentFacingMode = "environment";
+        let stream = null;
+        let track = null;
 
         function updateTable() {
             document.getElementById("attendance-table").innerHTML = "";
@@ -60,57 +63,23 @@
             });
         }
 
-        function loadExcel(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: "array" });
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-                excelEnrollmentNumbers.clear();
-                jsonData.forEach(row => {
-                    if (row[0] && /^\d{12,}$/.test(row[0])) {
-                        excelEnrollmentNumbers.add(row[0].toString());
-                    }
-                });
-                alert("Excel data loaded successfully!");
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function checkEnrollment(enrollmentNo) {
-            if (excelEnrollmentNumbers.has(enrollmentNo)) {
-                document.getElementById("checkStatus").innerText = "✅ Found in Excel";
-                return true;
-            } else {
-                document.getElementById("checkStatus").innerText = "❌ Not Found in Excel";
-                return false;
-            }
-        }
-
         async function startScanner() {
             const codeReader = new ZXing.BrowserMultiFormatReader();
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } });
                 document.getElementById("video").srcObject = stream;
+                track = stream.getVideoTracks()[0];
+                
                 codeReader.decodeFromVideoDevice(null, "video", (result, err) => {
                     if (result) {
                         let enrollmentNo = result.text.trim();
                         if (/^\d{12,}$/.test(enrollmentNo) && !scannedData.has(enrollmentNo)) {
-                            if (checkEnrollment(enrollmentNo)) {
-                                let timestamp = new Date().toLocaleString();
-                                scannedData.set(enrollmentNo, timestamp);
-                                localStorage.setItem("scannedData", JSON.stringify([...scannedData]));
+                            let timestamp = new Date().toLocaleString();
+                            scannedData.set(enrollmentNo, timestamp);
+                            localStorage.setItem("scannedData", JSON.stringify([...scannedData]));
 
-                                document.getElementById("result").innerText = enrollmentNo;
-                                updateTable();
-                            } else {
-                                alert("Enrollment number not found in Excel!");
-                            }
+                            document.getElementById("result").innerText = enrollmentNo;
+                            updateTable();
                         }
                     }
                 });
@@ -120,24 +89,22 @@
             }
         }
 
-        function saveToExcel() {
-            let ws = XLSX.utils.aoa_to_sheet([["Enrollment No", "Timestamp"], ...Array.from(scannedData).map(([enrollmentNo, timestamp]) => [enrollmentNo, timestamp])]);
-            let wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Attendance");
-            XLSX.writeFile(wb, "Student_Attendance.xlsx");
+        function toggleCamera() {
+            currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+            if (track) track.stop();
+            startScanner();
         }
 
-        function clearAttendance() {
-            if (confirm("Are you sure you want to clear all attendance data?")) {
-                scannedData.clear();
-                localStorage.removeItem("scannedData");
-                updateTable();
+        function toggleFlashlight() {
+            if (track && track.getCapabilities().torch) {
+                track.applyConstraints({ advanced: [{ torch: !track.getSettings().torch }] });
+            } else {
+                alert("Flashlight is not supported on this device.");
             }
         }
 
         updateTable();
         startScanner();
     </script>
-
 </body>
 </html>
