@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast Student Attendance Scanner</title>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+        #scanner-container { display: flex; justify-content: center; }
+        .scanner { border: 2px solid #333; padding: 10px; border-radius: 10px;height: 50%; }
+        video { width: 100%; max-width: 400px; height: auto; border: 1px solid black; }
+        table { width: 80%; margin: 20px auto; border-collapse: collapse; }
+        th, td { border: 1px solid black; padding: 8px; }
+        th { background-color: #f2f2f2; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <h2>Fast Student Attendance Scanner</h2>
+
+    <!-- Upload Excel File -->
+    <input type="file" id="uploadExcel" accept=".xlsx" onchange="loadExcel(event)">
+    <p><strong>Excel Check: </strong><span id="checkStatus">Not checked</span></p>
+
+    <div id="scanner-container">
+        <div class="scanner">
+            <h3>Scanner</h3>
+            <video id="video" autoplay playsinline></video>
+            <p><strong>Scanned:</strong> <span id="result">None</span></p>
+        </div>
+    </div>
+
+    <h3>Attendance List</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Enrollment No</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody id="attendance-table"></tbody>
+    </table>
+
+    <button onclick="saveToExcel()">Download Excel</button>
+    <button onclick="clearAttendance()">Clear Data</button>
+
+    <script>
+        let scannedData = new Map(JSON.parse(localStorage.getItem("scannedData")) || []);
+        let excelEnrollmentNumbers = new Set(); // Store Excel enrollment numbers
+
+        function updateTable() {
+            document.getElementById("attendance-table").innerHTML = "";
+            scannedData.forEach((timestamp, enrollmentNo) => {
+                let row = `<tr><td>${enrollmentNo}</td><td>${timestamp}</td></tr>`;
+                document.getElementById("attendance-table").innerHTML += row;
+            });
+        }
+
+        function loadExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: "array" });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                excelEnrollmentNumbers.clear();
+                jsonData.forEach(row => {
+                    if (row[0] && /^\d{12,}$/.test(row[0])) {
+                        excelEnrollmentNumbers.add(row[0].toString());
+                    }
+                });
+                alert("Excel data loaded successfully!");
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function checkEnrollment(enrollmentNo) {
+            if (excelEnrollmentNumbers.has(enrollmentNo)) {
+                document.getElementById("checkStatus").innerText = "✅ Found in Excel";
+                return true;
+            } else {
+                document.getElementById("checkStatus").innerText = "❌ Not Found in Excel";
+                return false;
+            }
+        }
+
+        async function startScanner() {
+            const codeReader = new ZXing.BrowserMultiFormatReader();
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                document.getElementById("video").srcObject = stream;
+                codeReader.decodeFromVideoDevice(null, "video", (result, err) => {
+                    if (result) {
+                        let enrollmentNo = result.text.trim();
+                        if (/^\d{12,}$/.test(enrollmentNo) && !scannedData.has(enrollmentNo)) {
+                            if (checkEnrollment(enrollmentNo)) {
+                                let timestamp = new Date().toLocaleString();
+                                scannedData.set(enrollmentNo, timestamp);
+                                localStorage.setItem("scannedData", JSON.stringify([...scannedData]));
+
+                                document.getElementById("result").innerText = enrollmentNo;
+                                updateTable();
+                            } else {
+                                alert("Enrollment number not found in Excel!");
+                            }
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error("Camera access error:", err);
+                alert("Enable camera permissions to scan.");
+            }
+        }
+
+        function saveToExcel() {
+            let ws = XLSX.utils.aoa_to_sheet([["Enrollment No", "Timestamp"], ...Array.from(scannedData).map(([enrollmentNo, timestamp]) => [enrollmentNo, timestamp])]);
+            let wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+            XLSX.writeFile(wb, "Student_Attendance.xlsx");
+        }
+
+        function clearAttendance() {
+            if (confirm("Are you sure you want to clear all attendance data?")) {
+                scannedData.clear();
+                localStorage.removeItem("scannedData");
+                updateTable();
+            }
+        }
+
+        updateTable();
+        startScanner();
+    </script>
+
+</body>
+</html>
