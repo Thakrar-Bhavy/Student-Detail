@@ -95,10 +95,8 @@
 
         async function startScanner() {
             const codeReader = new ZXing.BrowserMultiFormatReader();
-
-            // Select back camera
             const constraints = {
-                video: { facingMode: { exact: "environment" } } // Forces back camera on mobile
+                video: { facingMode: { exact: "environment" } }
             };
 
             navigator.mediaDevices.getUserMedia(constraints)
@@ -106,8 +104,8 @@
                     document.getElementById("video").srcObject = stream;
                     return codeReader.decodeFromStream(stream, "video", (result, err) => {
                         if (result) {
-                            let enrollmentNo = result.text;
-                            if (![...scannedData].some(entry => entry.startsWith(enrollmentNo))) {
+                            let enrollmentNo = result.text.trim();
+                            if (/^\d{12,}$/.test(enrollmentNo) && ![...scannedData].some(entry => entry.startsWith(enrollmentNo))) {
                                 let timestamp = new Date().toLocaleString();
                                 scannedData.add(`${enrollmentNo}|${timestamp}`);
                                 localStorage.setItem("scannedData", JSON.stringify([...scannedData]));
@@ -115,7 +113,6 @@
                                 document.getElementById("result").innerText = enrollmentNo;
                                 updateTable();
 
-                                // Send data to Google Sheets
                                 fetch(googleSheetUrl, {
                                     method: "POST",
                                     headers: { "Content-Type": "application/json" },
@@ -123,6 +120,8 @@
                                 }).then(response => response.text())
                                   .then(data => console.log("Google Sheets response:", data))
                                   .catch(error => console.error("Error:", error));
+                            } else {
+                                alert("Invalid Enrollment Number. Must be at least 12 digits and contain only numbers.");
                             }
                         }
                     });
@@ -148,7 +147,6 @@
             }
         }
 
-        // Restore table on page load
         updateTable();
         startScanner();
     </script>
