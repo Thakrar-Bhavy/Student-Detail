@@ -3,108 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fast Student Attendance Scanner</title>
-    <script src="https://unpkg.com/@zxing/library@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <title>Student Attendance Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
-        #scanner-container { display: flex; justify-content: center; }
-        .scanner { border: 2px solid #333; padding: 10px; border-radius: 10px; height: 50%; }
-        video { width: 100%; max-width: 400px; height: auto; border: 1px solid black; }
-        table { width: 80%; margin: 20px auto; border-collapse: collapse; }
-        th, td { border: 1px solid black; padding: 8px; }
-        th { background-color: #f2f2f2; }
-        button { padding: 10px 20px; margin: 10px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
-        button:hover { background: #0056b3; }
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #scanner { width: 100%; height: 300px; border: 1px solid #ccc; margin-top: 20px; }
+        #output { margin-top: 20px; font-size: 18px; font-weight: bold; }
+        #downloadBtn { margin-top: 20px; padding: 10px 20px; font-size: 16px; display: none; }
     </style>
 </head>
 <body>
-
-    <h2>Fast Student Attendance Scanner</h2>
-    <input type="file" id="uploadExcel" accept=".xlsx" onchange="loadExcel(event)">
-    <p><strong>Excel Check: </strong><span id="checkStatus">Not checked</span></p>
+    <h1>Student Attendance Tracker</h1>
+    <input type="file" id="fileInput" accept=".xlsx, .xls"/>
+    <button id="downloadBtn">Download Updated Attendance</button>
     
-    <div id="scanner-container">
-        <div class="scanner">
-            <h3>Scanner</h3>
-            <video id="video" autoplay playsinline></video>
-            <p><strong>Scanned:</strong> <span id="result">None</span></p>
-            <button onclick="toggleCamera()">Switch Camera</button>
-            <button onclick="toggleFlashlight()">Toggle Flashlight</button>
-        </div>
-    </div>
+    <div id="scanner"></div>
+    <div id="output"></div>
+<style type="text/css">
+    /* General Styles */
+body {
+    font-family: 'Poppins', sans-serif;
+    text-align: center;
+    background-color: #f8f9fa;
+    margin: 0;
+    padding: 20px;
+    color: #343a40;
+}
 
-    <h3>Attendance List</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Enrollment No</th>
-                <th>Timestamp</th>
-            </tr>
-        </thead>
-        <tbody id="attendance-table"></tbody>
-    </table>
+h1 {
+    color: #007bff;
+    font-size: 28px;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
 
-    <button onclick="saveToExcel()">Download Excel</button>
-    <button onclick="clearAttendance()">Clear Data</button>
+/* File Input & Button Styling */
+input[type="file"] {
+    padding: 12px;
+    border: 2px solid #007bff;
+    border-radius: 5px;
+    background: #ffffff;
+    margin-bottom: 20px;
+    cursor: pointer;
+    font-size: 16px;
+    color: #007bff;
+    transition: all 0.3s ease;
+}
 
+input[type="file"]:hover {
+    background: #007bff;
+    color: #fff;
+}
+
+button {
+    padding: 14px 22px;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    background: #28a745;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+button:hover {
+    background: #218838;
+}
+
+/* Scanner Section */
+#scanner {
+    width: 90%;
+    max-width: 600px;
+    height: 280px;
+    border: 4px solid #007bff;
+    border-radius: 12px;
+    margin: 20px auto;
+    background: #fff;
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    position: relative;
+}
+
+#scanner video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+/* Attendance Output */
+#output {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #155724;
+    background: #d4edda;
+    padding: 12px;
+    border-radius: 6px;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+    border-left: 6px solid #28a745;
+    display: flex;
+    flex-direction: column-reverse;
+}
+
+#output p {
+    margin: 5px 0;
+    padding: 8px;
+    background: #ffffff;
+    border-radius: 4px;
+    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.2);
+    font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    #scanner {
+        height: 220px;
+    }
+
+    button {
+        width: 100%;
+    }
+}
+
+</style>
     <script>
-        let scannedData = new Map(JSON.parse(localStorage.getItem("scannedData")) || []);
-        let excelEnrollmentNumbers = new Set();
-        let currentFacingMode = "environment";
-        let stream = null;
-        let track = null;
+        let students = {};
+        let attendance = {};
 
-        function updateTable() {
-            document.getElementById("attendance-table").innerHTML = "";
-            scannedData.forEach((timestamp, enrollmentNo) => {
-                let row = `<tr><td>${enrollmentNo}</td><td>${timestamp}</td></tr>`;
-                document.getElementById("attendance-table").innerHTML += row;
+        document.getElementById('fileInput').addEventListener('change', handleFile, false);
+        document.getElementById('downloadBtn').addEventListener('click', downloadAttendance, false);
+
+        function handleFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                jsonData.forEach(student => {
+                    students[student.EnrollmentNo] = student.Name;
+                    attendance[student.EnrollmentNo] = 'Absent'; // Initialize all as Absent
+                });
+
+                document.getElementById('downloadBtn').style.display = "block"; // Show download button
+                startScanning();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function startScanning() {
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#scanner')
+                },
+                decoder: {
+                    readers: ["code_128_reader"] // Adjust based on barcode type
+                }
+            }, function(err) {
+                if (err) {
+                    console.error(err);
+                    return;
+                }
+                Quagga.start();
+                Quagga.onDetected(onDetected);
             });
         }
 
-        async function startScanner() {
-            const codeReader = new ZXing.BrowserMultiFormatReader();
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } });
-                document.getElementById("video").srcObject = stream;
-                track = stream.getVideoTracks()[0];
-                
-                codeReader.decodeFromVideoDevice(null, "video", (result, err) => {
-                    if (result) {
-                        let enrollmentNo = result.text.trim();
-                        if (/^\d{12,}$/.test(enrollmentNo) && !scannedData.has(enrollmentNo)) {
-                            let timestamp = new Date().toLocaleString();
-                            scannedData.set(enrollmentNo, timestamp);
-                            localStorage.setItem("scannedData", JSON.stringify([...scannedData]));
+        function onDetected(result) {
+            const enrollmentNo = result.codeResult.code;
+            if (students[enrollmentNo]) {
+                if (attendance[enrollmentNo] === "Absent") {
+                    attendance[enrollmentNo] = 'Present'; // Mark as present
+                    const outputDiv = document.getElementById('output');
+                    const studentName = students[enrollmentNo];
 
-                            document.getElementById("result").innerText = enrollmentNo;
-                            updateTable();
-                        }
-                    }
-                });
-            } catch (err) {
-                console.error("Camera access error:", err);
-                alert("Enable camera permissions to scan.");
-            }
-        }
-
-        function toggleCamera() {
-            currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
-            if (track) track.stop();
-            startScanner();
-        }
-
-        function toggleFlashlight() {
-            if (track && track.getCapabilities().torch) {
-                track.applyConstraints({ advanced: [{ torch: !track.getSettings().torch }] });
+                    const newEntry = document.createElement('p');
+                    newEntry.textContent = `✔ ${studentName} (${enrollmentNo}) marked Present`;
+                    outputDiv.appendChild(newEntry);
+                }
             } else {
-                alert("Flashlight is not supported on this device.");
+                //alert("Enrollment number not found in the uploaded file!");
             }
         }
 
-        updateTable();
-        startScanner();
+        function downloadAttendance() {
+            const updatedData = [];
+            for (const enrollmentNo in attendance) {
+                updatedData.push({
+                    EnrollmentNo: enrollmentNo,
+                    Name: students[enrollmentNo],
+                    Status: attendance[enrollmentNo]
+                });
+            }
+
+            const ws = XLSX.utils.json_to_sheet(updatedData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+
+            XLSX.writeFile(wb, "IIPC_Updated_Attendance.xlsx");
+        }
     </script>
 </body>
 </html>
