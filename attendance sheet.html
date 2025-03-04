@@ -3,98 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Attendance Tracker</title>
+    <title>Fast Student Attendance Scanner</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        #scanner { width: 100%; height: 300px; border: 1px solid #ccc; margin-top: 20px; }
-        #output { margin-top: 20px; font-size: 18px; font-weight: bold; }
-        #downloadBtn { margin-top: 20px; padding: 10px 20px; font-size: 16px; display: none; }
-    </style>
-</head>
-<body>
-    <h1>Student Attendance Tracker</h1>
-    <input type="file" id="fileInput" accept=".xlsx, .xls"/>
-    <button id="downloadBtn">Download Updated Attendance</button>
-    
-    <div id="scanner"></div>
-    <div id="output"></div>
-<style type="text/css">
-    /* General Styles */
+       /* General Page Styling */
 body {
     font-family: 'Poppins', sans-serif;
     text-align: center;
-    background-color: #f8f9fa;
+    background-color: #f4f4f4;
     margin: 0;
     padding: 20px;
-    color: #343a40;
+    color: #333;
 }
 
+/* Header Styling */
 h1 {
     color: #007bff;
-    font-size: 28px;
-    margin-bottom: 20px;
-    font-weight: 600;
+    font-size: 26px;
+    font-weight: bold;
+    margin-bottom: 15px;
 }
 
-/* File Input & Button Styling */
-input[type="file"] {
+/* Input and Button Styling */
+input, button {
     padding: 12px;
-    border: 2px solid #007bff;
-    border-radius: 5px;
-    background: #ffffff;
-    margin-bottom: 20px;
-    cursor: pointer;
     font-size: 16px;
-    color: #007bff;
-    transition: all 0.3s ease;
-}
-
-input[type="file"]:hover {
-    background: #007bff;
-    color: #fff;
+    margin: 10px;
+    border-radius: 5px;
+    border: none;
+    outline: none;
+    width: 90%;
+    max-width: 400px;
+    display: block;
+    margin: 10px auto;
 }
 
 button {
-    padding: 14px 22px;
-    font-size: 18px;
-    font-weight: bold;
-    color: white;
     background: #28a745;
-    border: none;
-    border-radius: 5px;
+    color: white;
     cursor: pointer;
-    transition: background 0.3s;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    transition: 0.3s;
+    font-weight: bold;
 }
 
 button:hover {
     background: #218838;
 }
 
-/* Scanner Section */
+/* Scanner Styling */
 #scanner {
-    width: 90%;
+    width: 100%;
     max-width: 600px;
-    height: 280px;
+    height: 300px;
     border: 4px solid #007bff;
     border-radius: 12px;
     margin: 20px auto;
     background: #fff;
-    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
     overflow: hidden;
-    position: relative;
 }
 
-#scanner video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 12px;
+/* Make scanner responsive on mobile */
+@media (max-width: 768px) {
+    #scanner {
+        width: 95%;
+        height: 250px;
+    }
 }
 
-/* Attendance Output */
+/* Output Section Styling */
 #output {
     margin-top: 20px;
     font-size: 18px;
@@ -103,39 +81,84 @@ button:hover {
     background: #d4edda;
     padding: 12px;
     border-radius: 6px;
-    width: fit-content;
-    margin-left: auto;
-    margin-right: auto;
-    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
-    border-left: 6px solid #28a745;
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: column; /* ✅ Ensures new entries appear at the top */
+    justify-content: flex-start; 
+    max-width: 600px;
+    margin: 20px auto;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    overflow-y: auto; /* Allows scrolling if many entries */
+    max-height: 300px;
 }
 
+/* Each Scanned Entry Styling */
 #output p {
     margin: 5px 0;
-    padding: 8px;
+    padding: 10px;
     background: #ffffff;
-    border-radius: 4px;
-    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.2);
-    font-weight: 500;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    text-align: left;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+    border-left: 5px solid #28a745;
 }
 
-/* Responsive Design */
-@media (max-width: 600px) {
+/* Newest entry styling (animation) */
+#output p:first-child {
+    background: #c3e6cb;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Fade-in effect for new entries */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile Optimization */
+@media (max-width: 480px) {
+    h1 {
+        font-size: 22px;
+    }
+
+    input, button {
+        width: 95%;
+        font-size: 14px;
+    }
+
     #scanner {
         height: 220px;
     }
 
-    button {
-        width: 100%;
+    #output {
+        font-size: 16px;
     }
 }
 
-</style>
+    </style>
+</head>
+<body>
+
+    <h1>Fast Student Attendance Scanner</h1>
+    <input type="file" id="fileInput" accept=".xlsx, .xls"/>
+    <button id="downloadBtn" style="display:none;">Download Updated Attendance</button>
+
+    <div id="scanner"></div>
+    <div id="output"></div>
+
     <script>
         let students = {};
         let attendance = {};
+        let lastScanned = ""; // Avoid duplicate scans
+        const scriptURL = "https://script.google.com/macros/s/AKfycbyHabzwWjDzjREx2UKe_EuinrioSpZTjgd4Siqwh0zE7F18-HR1YSbCRDdP3tSCWTqpfw/exec";
 
         document.getElementById('fileInput').addEventListener('change', handleFile, false);
         document.getElementById('downloadBtn').addEventListener('click', downloadAttendance, false);
@@ -143,7 +166,7 @@ button:hover {
         function handleFile(event) {
             const file = event.target.files[0];
             if (!file) return;
-            
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
@@ -153,10 +176,10 @@ button:hover {
 
                 jsonData.forEach(student => {
                     students[student.EnrollmentNo] = student.Name;
-                    attendance[student.EnrollmentNo] = 'Absent'; // Initialize all as Absent
+                    attendance[student.EnrollmentNo] = 'Absent';
                 });
 
-                document.getElementById('downloadBtn').style.display = "block"; // Show download button
+                document.getElementById('downloadBtn').style.display = "block";
                 startScanning();
             };
             reader.readAsArrayBuffer(file);
@@ -167,54 +190,74 @@ button:hover {
                 inputStream: {
                     name: "Live",
                     type: "LiveStream",
-                    target: document.querySelector('#scanner')
+                    target: document.querySelector('#scanner'),
+                    constraints: {
+                        width: 1280,
+                        height: 720,
+                        facingMode: "environment"
+                    }
                 },
-                decoder: {
-                    readers: ["code_128_reader"] // Adjust based on barcode type
-                }
+                decoder: { 
+                    readers: ["code_128_reader"],
+                    multiple: false
+                },
+                locate: true
             }, function(err) {
-                if (err) {
-                    console.error(err);
-                    return;
-                }
+                if (err) { console.error(err); return; }
                 Quagga.start();
                 Quagga.onDetected(onDetected);
             });
         }
 
+        function sendToGoogleSheets(enrollmentNo, studentName) {
+            const formData = new FormData();
+            formData.append("EnrollmentNo", enrollmentNo);
+            formData.append("Name", studentName);
+            formData.append("Status", "Present");
+
+            fetch(scriptURL, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => console.log("Success:", data))
+            .catch(error => console.error("Error:", error));
+        }
+
         function onDetected(result) {
             const enrollmentNo = result.codeResult.code;
+            if (enrollmentNo === lastScanned) return; // Prevent multiple scans of same student
+            lastScanned = enrollmentNo; // Store last scanned code
+
             if (students[enrollmentNo]) {
                 if (attendance[enrollmentNo] === "Absent") {
-                    attendance[enrollmentNo] = 'Present'; // Mark as present
-                    const outputDiv = document.getElementById('output');
-                    const studentName = students[enrollmentNo];
+                    attendance[enrollmentNo] = 'Present';
+                    sendToGoogleSheets(enrollmentNo, students[enrollmentNo]);
 
+                    const outputDiv = document.getElementById('output');
                     const newEntry = document.createElement('p');
-                    newEntry.textContent = `✔ ${studentName} (${enrollmentNo}) marked Present`;
-                    outputDiv.appendChild(newEntry);
+                    newEntry.textContent = `✔ ${students[enrollmentNo]} (${enrollmentNo}) marked Present`;
+                    outputDiv.prepend(newEntry);
                 }
-            } else {
-                //alert("Enrollment number not found in the uploaded file!");
             }
+
+            // Allow next scan after 0.5 second (faster response)
+            setTimeout(() => lastScanned = "", 500);
         }
 
         function downloadAttendance() {
-            const updatedData = [];
-            for (const enrollmentNo in attendance) {
-                updatedData.push({
-                    EnrollmentNo: enrollmentNo,
-                    Name: students[enrollmentNo],
-                    Status: attendance[enrollmentNo]
-                });
-            }
+            const updatedData = Object.keys(attendance).map(enrollmentNo => ({
+                EnrollmentNo: enrollmentNo,
+                Name: students[enrollmentNo],
+                Status: attendance[enrollmentNo]
+            }));
 
             const ws = XLSX.utils.json_to_sheet(updatedData);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Attendance");
-
-            XLSX.writeFile(wb, "IIPC_Updated_Attendance.xlsx");
+            XLSX.writeFile(wb, "Updated_Attendance.xlsx");
         }
     </script>
+
 </body>
 </html>
