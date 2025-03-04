@@ -185,29 +185,36 @@ button:hover {
             reader.readAsArrayBuffer(file);
         }
 
-        function startScanning() {
-            Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: document.querySelector('#scanner'),
-                    constraints: {
-                        width: 1280,
-                        height: 720,
-                        facingMode: "environment"
-                    }
-                },
-                decoder: { 
-                    readers: ["code_128_reader"],
-                    multiple: false
-                },
-                locate: true
-            }, function(err) {
-                if (err) { console.error(err); return; }
-                Quagga.start();
-                Quagga.onDetected(onDetected);
-            });
+       function startScanning() {
+    Quagga.init({
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: document.querySelector('#scanner'),
+            constraints: {
+                width: { ideal: 1920 },  // High-resolution width
+                height: { ideal: 1080 }, // High-resolution height
+                facingMode: "environment", // Forces back camera for better scanning
+                frameRate: { ideal: 30 }  // Smooth frame rate
+            }
+        },
+        decoder: {
+            readers: ["code_128_reader"],
+            multiple: false // Ensures only one scan at a time
+        },
+        locate: true, // Helps with better barcode detection
+        numOfWorkers: navigator.hardwareConcurrency || 4, // Uses more CPU threads for speed
+        frequency: 10, // Adjusts scan speed (lower number = faster)
+    }, function(err) {
+        if (err) {
+            console.error("Quagga initialization failed:", err);
+            return;
         }
+        Quagga.start();
+        Quagga.onDetected(onDetected);
+    });
+}
+
 
         function sendToGoogleSheets(enrollmentNo, studentName) {
             const formData = new FormData();
