@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            background-color: #f2f4f8;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        input, button {
+            padding: 12px;
+            margin: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #scanner {
+            width: 100%;
+            max-width: 600px;
+            height: 300px;
+            border: 4px solid #3498db;
+            border-radius: 12px;
+            margin: 20px auto;
+            background: #fff;
+        }
+        #output {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #2d572c;
+            background: #d4edda;
+            padding: 10px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+        #loginSection {
+            margin-top: 50px;
+        }
+        #attendanceSection {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Student Attendance Tracker</h1>
+
+    <!-- Login Section -->
+    <div id="loginSection">
+        <h2>Coordinator Login</h2>
+        <input type="text" id="attendeeName" placeholder="Enter Name" required>
+        <input type="password" id="attendeePassword" placeholder="Enter Password" required>
+        <br>
+        <button onclick="login()">Login</button>
+        <div id="loginMessage" style="color:red;"></div>
+    </div>
+
+    <!-- Attendance Section -->
+    <div id="attendanceSection">
+        <div id="scanner"></div>
+        <div id="output"></div>
+    </div>
+</div>
+
+<script>
+    const validUsers = {
+        'Bhavy': 'bhavy123',
+        'Riya': 'riya456',
+        'Jay': 'jay789'
+    };
+
+    let loggedInUser = null;
+
+    function login() {
+        const name = document.getElementById('attendeeName').value.trim();
+        const password = document.getElementById('attendeePassword').value;
+
+        if (validUsers[name] && validUsers[name] === password) {
+            loggedInUser = name;
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('attendanceSection').style.display = 'block';
+            startScanning();
+        } else {
+            document.getElementById('loginMessage').textContent = 'Invalid name or password.';
+        }
+    }
+
+    function startScanning() {
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector('#scanner'),
+                constraints: {
+                    facingMode: "environment",
+                    width: { min: 640 },
+                    height: { min: 480 }
+                }
+            },
+            locator: {
+                patchSize: "medium",
+                halfSample: true
+            },
+            decoder: {
+                readers: ["code_128_reader"]
+            },
+            locate: true
+        }, function (err) {
+            if (err) {
+                console.error(err);
+                return;
+            }
+            Quagga.start();
+        });
+
+        Quagga.onDetected(function (result) {
+            const enrollmentNo = result.codeResult.code;
+            markAttendance(enrollmentNo);
+        });
+    }
+
+    const scanned = {};
+
+    function markAttendance(enrollmentNo) {
+        if (scanned[enrollmentNo]) return;
+
+        scanned[enrollmentNo] = true;
+
+        const studentEntry = {
+            enrollment: enrollmentNo,
+            timestamp: new Date().toLocaleString(),
+            attendee: loggedInUser
+        };
+
+        // Show on screen
+        const outputDiv = document.getElementById('output');
+        const newEntry = document.createElement('p');
+        newEntry.textContent = `✔ ${enrollmentNo} marked Present by ${loggedInUser}`;
+        outputDiv.prepend(newEntry);
+
+        // Send to Google Sheet
+        fetch("https://script.google.com/macros/s/AKfycbyHabzwWjDzjREx2UKe_EuinrioSpZTjgd4Siqwh0zE7F18-HR1YSbCRDdP3tSCWTqpfw/exec", {
+            method: "POST",
+            body: JSON.stringify(studentEntry),
+            headers: { "Content-Type": "application/json" }
+        }).then(res => res.text()).then(data => {
+            console.log("Success:", data);
+        }).catch(err => {
+            console.error("Error:", err);
+        });
+    }
+</script>
+
+</body>
+</html>
