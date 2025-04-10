@@ -3,173 +3,651 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Attendance Tracker</title>
+    <title>Coordinator Login & Attendance Scanner</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            text-align: center;
-            background-color: #f2f4f8;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            padding: 20px;
-        }
-        h1 {
-            color: #2c3e50;
-        }
-        input, button {
-            padding: 12px;
-            margin: 10px;
-            font-size: 16px;
-            border-radius: 5px;
-        }
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-        }
-        button:hover {
-            background-color: #2980b9;
-        }
-        #scanner {
-            width: 100%;
-            max-width: 600px;
-            height: 300px;
-            border: 4px solid #3498db;
-            border-radius: 12px;
-            margin: 20px auto;
-            background: #fff;
-        }
-        #output {
-            margin-top: 20px;
-            font-size: 18px;
-            color: #2d572c;
-            background: #d4edda;
-            padding: 10px;
-            border-radius: 6px;
-            display: flex;
-            flex-direction: column-reverse;
-        }
-        #loginSection {
-            margin-top: 50px;
-        }
+       /* General Page Styling */
+       body {
+           font-family: 'Poppins', sans-serif;
+           text-align: center;
+           background-color: #f4f4f4;
+           margin: 0;
+           padding: 20px;
+           color: #333;
+       }
+
+       /* Header Styling */
+       h1 {
+           color: #007bff;
+           font-size: 26px;
+           font-weight: bold;
+           margin-bottom: 15px;
+       }
+
+       /* Input and Button Styling */
+       input, button {
+           padding: 12px;
+           font-size: 16px;
+           margin: 10px auto; /* Center horizontally */
+           border-radius: 5px;
+           border: 1px solid #ccc; /* Add subtle border */
+           outline: none;
+           width: 90%;
+           max-width: 400px;
+           display: block; /* Ensure block display */
+           box-sizing: border-box; /* Include padding/border in width */
+       }
+
+       /* Specific styling for file input */
+       input[type="file"] {
+           border: 1px dashed #ccc;
+           padding: 10px; /* Adjust padding */
+           background-color: #fff;
+           cursor: pointer;
+       }
+
+       button {
+           background: #28a745;
+           color: white;
+           cursor: pointer;
+           transition: background-color 0.3s;
+           font-weight: bold;
+           border: none; /* Remove border for buttons */
+       }
+
+       button:hover {
+           background: #218838;
+       }
+
+       /* Login Section Specifics */
+       #loginSection {
+           background-color: #fff;
+           padding: 30px 20px;
+           border-radius: 8px;
+           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+           max-width: 450px;
+           margin: 30px auto;
+       }
+
+       #loginSection h2 {
+           color: #007bff;
+           margin-bottom: 20px;
+       }
+
+       #loginError {
+           color: #dc3545;
+           font-size: 14px;
+           margin-top: 10px;
+           min-height: 18px; /* Reserve space */
+       }
+
+       #logoutBtn {
+           background-color: #dc3545; /* Red for logout */
+           margin-top: 20px;
+       }
+       #logoutBtn:hover {
+           background-color: #c82333;
+       }
+
+        /* Attendance Section (Initially Hidden) */
         #attendanceSection {
-            display: none;
+            display: none; /* Hide by default */
+            margin-top: 20px;
         }
+
+        #loggedInUser {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+       /* Scanner Styling */
+       #scanner {
+           width: 100%;
+           max-width: 600px;
+           height: 300px;
+           border: 4px solid #007bff;
+           border-radius: 12px;
+           margin: 20px auto;
+           background: #fff;
+           box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+           overflow: hidden;
+           position: relative; /* Needed for drawing */
+       }
+
+       #scanner canvas, #scanner video {
+           width: 100%;
+           height: 100%;
+       }
+       .drawingBuffer {
+           position: absolute;
+           top: 0;
+           left: 0;
+       }
+
+       /* Make scanner responsive on mobile */
+       @media (max-width: 768px) {
+           #scanner {
+               width: 95%;
+               height: 250px;
+           }
+       }
+
+       /* Output Section Styling */
+       #output {
+           margin-top: 20px;
+           font-size: 18px;
+           font-weight: bold;
+           color: #155724;
+           background: #d4edda;
+           padding: 12px;
+           border-radius: 6px;
+           display: flex;
+           flex-direction: column-reverse; /* ✅ New entries appear at the top */
+           justify-content: flex-start;
+           max-width: 600px;
+           margin: 20px auto;
+           box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+           overflow-y: auto; /* Allows scrolling if many entries */
+           max-height: 300px;
+           min-height: 50px; /* Give it some initial height */
+       }
+
+       /* Each Scanned Entry Styling */
+       #output p {
+           margin: 5px 0;
+           padding: 10px;
+           background: #ffffff;
+           border-radius: 5px;
+           font-size: 16px;
+           font-weight: normal; /* Changed from bold */
+           color: #333;
+           text-align: left;
+           box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+           border-left: 5px solid #28a745;
+           animation: fadeIn 0.5s ease-out; /* Apply animation to all new */
+       }
+
+       /* Fade-in effect for new entries */
+       @keyframes fadeIn {
+           from {
+               opacity: 0;
+               transform: translateY(10px);
+           }
+           to {
+               opacity: 1;
+               transform: translateY(0);
+           }
+       }
+
+       /* Mobile Optimization */
+       @media (max-width: 480px) {
+           h1 {
+               font-size: 22px;
+           }
+
+           input, button {
+               width: 95%;
+               font-size: 14px;
+           }
+
+            #loginSection {
+                padding: 20px 15px;
+                max-width: 95%;
+            }
+
+           #scanner {
+               height: 220px;
+           }
+
+           #output {
+               font-size: 16px;
+               max-height: 250px;
+           }
+           #output p {
+               font-size: 14px;
+           }
+       }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Student Attendance Tracker</h1>
+    <h1>Student Attendance System</h1>
 
     <!-- Login Section -->
     <div id="loginSection">
         <h2>Coordinator Login</h2>
-        <input type="text" id="attendeeName" placeholder="Enter Name" required>
-        <input type="password" id="attendeePassword" placeholder="Enter Password" required>
-        <br>
-        <button onclick="login()">Login</button>
-        <div id="loginMessage" style="color:red;"></div>
+        <input type="text" id="username" placeholder="Username" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <button id="loginBtn">Login</button>
+        <div id="loginError"></div>
     </div>
 
-    <!-- Attendance Section -->
+    <!-- Attendance Section (Hidden Initially) -->
     <div id="attendanceSection">
+        <div id="loggedInUser"></div>
+        <button id="logoutBtn">Logout</button>
+
+        <input type="file" id="fileInput" accept=".xlsx, .xls"/>
         <div id="scanner"></div>
         <div id="output"></div>
+        <button id="downloadBtn" style="display:none;">Download Updated Attendance</button>
     </div>
-</div>
 
-<script>
-    const validUsers = {
-        'Bhavy': 'bhavy123',
-        'Riya': 'riya456',
-        'Jay': 'jay789'
-    };
+    <script>
+        // --- Coordinator Credentials (Replace with actual usernames/passwords) ---
+        // IMPORTANT: This is NOT secure. Anyone viewing the page source can see these.
+        const coordinators = {
+            "bhavy": "bhavy123",
+            "coord2": "password",
+            "coord3": "secret"
+        };
+        // --- ---
 
-    let loggedInUser = null;
+        let students = {};
+        let attendance = {};
+        let lastScanned = ""; // Avoid duplicate scans
+        let loggedInCoordinator = null; // Track logged-in user
+        let isScannerActive = false; // Track scanner state
+        const scriptURL = "https://script.google.com/macros/s/AKfycbyHabzwWjDzjREx2UKe_EuinrioSpZTjgd4Siqwh0zE7F18-HR1YSbCRDdP3tSCWTqpfw/exec"; // Keep your script URL
 
-    function login() {
-        const name = document.getElementById('attendeeName').value.trim();
-        const password = document.getElementById('attendeePassword').value;
+        // --- DOM Elements ---
+        const loginSection = document.getElementById('loginSection');
+        const attendanceSection = document.getElementById('attendanceSection');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const loginError = document.getElementById('loginError');
+        const loggedInUserDisplay = document.getElementById('loggedInUser');
+        const fileInput = document.getElementById('fileInput');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const scannerDiv = document.getElementById('scanner');
+        const outputDiv = document.getElementById('output');
 
-        if (validUsers[name] && validUsers[name] === password) {
-            loggedInUser = name;
-            document.getElementById('loginSection').style.display = 'none';
-            document.getElementById('attendanceSection').style.display = 'block';
-            startScanning();
-        } else {
-            document.getElementById('loginMessage').textContent = 'Invalid name or password.';
-        }
-    }
+        // --- Event Listeners ---
+        loginBtn.addEventListener('click', handleLogin);
+        logoutBtn.addEventListener('click', handleLogout);
+        fileInput.addEventListener('change', handleFile, false);
+        downloadBtn.addEventListener('click', downloadAttendance, false);
 
-    function startScanning() {
-        Quagga.init({
-            inputStream: {
-                name: "Live",
-                type: "LiveStream",
-                target: document.querySelector('#scanner'),
-                constraints: {
-                    facingMode: "environment",
-                    width: { min: 640 },
-                    height: { min: 480 }
-                }
-            },
-            locator: {
-                patchSize: "medium",
-                halfSample: true
-            },
-            decoder: {
-                readers: ["code_128_reader"]
-            },
-            locate: true
-        }, function (err) {
-            if (err) {
-                console.error(err);
+        // Allow login on Enter key press
+        passwordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleLogin();
+            }
+        });
+         usernameInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleLogin();
+            }
+        });
+
+
+        // --- Functions ---
+
+        function handleLogin() {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+            loginError.textContent = ''; // Clear previous errors
+
+            if (!username || !password) {
+                loginError.textContent = 'Please enter username and password.';
                 return;
             }
-            Quagga.start();
-        });
 
-        Quagga.onDetected(function (result) {
+            // Check credentials
+            if (coordinators[username] && coordinators[username] === password) {
+                loggedInCoordinator = username;
+                // Hide login, show attendance
+                loginSection.style.display = 'none';
+                attendanceSection.style.display = 'block';
+                loggedInUserDisplay.textContent = `Logged in as: ${loggedInCoordinator}`;
+                // Clear login fields
+                usernameInput.value = '';
+                passwordInput.value = '';
+                resetAttendanceState(); // Reset state for the new session
+            } else {
+                loginError.textContent = 'Invalid username or password.';
+                passwordInput.value = ''; // Clear password field on failure
+            }
+        }
+
+        function handleLogout() {
+            stopScanning(); // Stop scanner if active
+            loggedInCoordinator = null;
+            // Hide attendance, show login
+            attendanceSection.style.display = 'none';
+            loginSection.style.display = 'block';
+            loggedInUserDisplay.textContent = '';
+            loginError.textContent = ''; // Clear any previous login errors
+            resetAttendanceState();
+             // Clear login fields for security/privacy
+            usernameInput.value = '';
+            passwordInput.value = '';
+        }
+
+        function resetAttendanceState() {
+            // Clear previous data
+            students = {};
+            attendance = {};
+            lastScanned = "";
+            outputDiv.innerHTML = ''; // Clear output display
+            fileInput.value = null; // Reset file input
+            downloadBtn.style.display = 'none'; // Hide download button
+            scannerDiv.innerHTML = ''; // Clear scanner area visually (Quagga will re-init)
+            isScannerActive = false; // Reset scanner flag
+            Quagga.initialized = false; // Mark Quagga as needing re-initialization
+        }
+
+
+        function handleFile(event) {
+            const file = event.target.files[0];
+            if (!file || !loggedInCoordinator) return; // Need a file and logged in user
+
+            outputDiv.innerHTML = '<p>Processing file...</p>'; // Indicate processing
+            downloadBtn.style.display = 'none'; // Hide button until processed
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    // Explicitly check for expected columns
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header:1}); // Read as array of arrays
+
+                    if (!jsonData || jsonData.length < 2) {
+                        throw new Error("Sheet is empty or has no data rows.");
+                    }
+
+                    const headers = jsonData[0].map(h => String(h).trim()); // Get headers from first row
+                    const enrollmentIndex = headers.indexOf("EnrollmentNo");
+                    const nameIndex = headers.indexOf("Name");
+
+                    if (enrollmentIndex === -1 || nameIndex === -1) {
+                         throw new Error("Missing required columns: 'EnrollmentNo' and/or 'Name'. Please check the Excel file header row.");
+                    }
+
+                    // Reset data before loading new file
+                    students = {};
+                    attendance = {};
+                    outputDiv.innerHTML = ''; // Clear "Processing..." message
+
+                    // Process rows starting from the second row (index 1)
+                    for (let i = 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        const enrollmentNo = row[enrollmentIndex] ? String(row[enrollmentIndex]).trim() : null;
+                        const name = row[nameIndex] ? String(row[nameIndex]).trim() : 'N/A';
+
+                        if (enrollmentNo) { // Only add if EnrollmentNo exists
+                            students[enrollmentNo] = name;
+                            attendance[enrollmentNo] = 'Absent'; // Default to Absent
+                        }
+                    }
+
+
+                    if (Object.keys(students).length > 0) {
+                        outputDiv.innerHTML = `<p>File loaded successfully. Found ${Object.keys(students).length} students. Ready to scan.</p>`;
+                        downloadBtn.style.display = "block"; // Show download button
+                        startScanning(); // Start scanner only after successful file load
+                    } else {
+                         outputDiv.innerHTML = `<p style="color: red;">No valid student data found in the file. Ensure 'EnrollmentNo' and 'Name' columns exist and have data.</p>`;
+                    }
+
+                } catch (error) {
+                    console.error("Error processing Excel file:", error);
+                    outputDiv.innerHTML = `<p style="color: red;">Error processing file: ${error.message}. Please ensure it's a valid .xlsx or .xls file with 'EnrollmentNo' and 'Name' columns.</p>`;
+                    // Optionally reset state if file processing fails critically
+                    // resetAttendanceState(); // Uncomment if you want full reset on error
+                    fileInput.value = null; // Allow re-selection of the same file if needed
+                    downloadBtn.style.display = 'none';
+                }
+            };
+            reader.onerror = function(e) {
+                 console.error("FileReader error:", e);
+                 outputDiv.innerHTML = `<p style="color: red;">Error reading the file.</p>`;
+                 downloadBtn.style.display = 'none';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+
+        function startScanning() {
+             // Prevent starting if already active or no students loaded
+            if (isScannerActive || Object.keys(students).length === 0) {
+                console.log("Scanner start prevented. Active:", isScannerActive, "Students:", Object.keys(students).length);
+                return;
+            }
+
+            // Ensure Quagga is stopped before re-initializing if necessary
+             if (Quagga.initialized) {
+                 Quagga.stop();
+                 Quagga.initialized = false; // Force re-init logic below
+             }
+             scannerDiv.innerHTML = ''; // Clear previous scanner view
+
+
+            console.log("Initializing Quagga...");
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: scannerDiv, // Target the specific div
+                    constraints: {
+                        width: { min: 640 },
+                        height: { min: 480 },
+                        facingMode: "environment", // Prefer back camera
+                        aspectRatio: { min: 1, max: 2 }
+                    },
+                     area: { // Try to constrain scanning area slightly (optional)
+                        top: "10%",
+                        right: "10%",
+                        left: "10%",
+                        bottom: "10%"
+                    }
+                },
+                 locator: {
+                    patchSize: "medium",
+                    halfSample: true
+                },
+                numOfWorkers: navigator.hardwareConcurrency || 4, // Use available cores
+                decoder: {
+                    readers: ["code_128_reader"], // Specify barcode type
+                     debug: { // Enable debug drawings (optional)
+                        // drawBoundingBox: true,
+                        // showFrequency: true,
+                        // drawScanline: true,
+                        // showPattern: true
+                    }
+                },
+                 locate: true // Enable localization
+            }, function(err) {
+                if (err) {
+                    console.error("❌ Quagga init failed:", err);
+                    outputDiv.innerHTML += `<p style="color: red;">Error starting scanner: ${err.message}. Please check camera permissions.</p>`;
+                    isScannerActive = false;
+                    return;
+                }
+                console.log("✅ Quagga initialization finished. Starting scanner...");
+                Quagga.start();
+                isScannerActive = true;
+                Quagga.initialized = true; // Mark as initialized successfully
+
+                // --- Register Event Listeners ---
+                 // Only register listeners *after* successful init
+                Quagga.onProcessed(function(result) {
+                    var drawingCtx = Quagga.canvas.ctx.overlay,
+                        drawingCanvas = Quagga.canvas.dom.overlay;
+
+                    if (result) {
+                        // Clear previous drawings
+                         drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
+
+                        if (result.boxes) {
+                            result.boxes.filter(function (box) {
+                                return box !== result.box;
+                            }).forEach(function (box) {
+                                Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
+                            });
+                        }
+
+                        if (result.box) {
+                            Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {color: "#00F", lineWidth: 2});
+                        }
+
+                        if (result.codeResult && result.codeResult.code) {
+                             // Optionally draw line (can be visually noisy)
+                            // Quagga.ImageDebug.drawPath(result.line, {x: 'x', y: 'y'}, drawingCtx, {color: 'red', lineWidth: 3});
+                        }
+                    }
+                });
+
+                // Detached previous listener if exists to avoid duplicates
+                Quagga.offDetected(onDetected); // Remove listener before adding
+                Quagga.onDetected(onDetected); // Add the main detection listener
+
+            });
+        }
+
+         function stopScanning() {
+            if (isScannerActive) {
+                console.log("Stopping Quagga scanner...");
+                Quagga.offDetected(onDetected); // Remove listener
+                Quagga.stop();
+                isScannerActive = false;
+                scannerDiv.innerHTML = ''; // Clear the scanner view
+                 // No need to set Quagga.initialized = false here, only on logout/reset
+                console.log("Scanner stopped.");
+            }
+        }
+
+        function sendToGoogleSheets(enrollmentNo, studentName, coordinator) {
+             if (!coordinator) {
+                 console.error("Cannot send to Google Sheets: Coordinator not logged in.");
+                 // Maybe display an error to the user?
+                 const p = document.createElement('p');
+                 p.textContent = `⚠️ Error: Cannot record attendance. Please log out and log in again.`;
+                 p.style.color = 'red';
+                 outputDiv.prepend(p);
+                 return;
+             }
+            const formData = new FormData();
+            formData.append("EnrollmentNo", enrollmentNo);
+            formData.append("Name", studentName);
+            formData.append("Status", "Present");
+            formData.append("Coordinator", coordinator); // Add coordinator name
+            // Optional: Add a timestamp from the client side
+            formData.append("Timestamp", new Date().toLocaleString());
+
+
+            fetch(scriptURL, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => {
+                // Check if response is ok (status 200-299) and if it's JSON
+                if (!response.ok) {
+                   throw new Error(`Network response was not ok (${response.status})`);
+                }
+                 // Check content type before parsing
+                const contentType = response.headers.get("content-type");
+                 if (contentType && contentType.indexOf("application/json") !== -1) {
+                    return response.json();
+                } else {
+                     // If not JSON, maybe it's HTML from script redirect or plain text
+                     return response.text().then(text => {
+                         console.log("Received non-JSON response from Google Script:", text);
+                         // Treat as success if the POST likely worked, but script returned HTML/text
+                         return { result: "success (non-json response)" };
+                     });
+                }
+            })
+            .then(data => {
+                 console.log("Google Sheets Success:", data);
+                 // Optionally add visual confirmation if needed, but the main UI update is enough
+            })
+            .catch(error => {
+                console.error("Error sending to Google Sheets:", error);
+                 // Display error to user in the output div
+                 const p = document.createElement('p');
+                 p.textContent = `⚠️ Error sending data for ${studentName} (${enrollmentNo}): ${error.message}. Please check network or Google Sheet script.`;
+                 p.style.color = 'orange';
+                 p.style.fontWeight = 'bold';
+                 outputDiv.prepend(p);
+            });
+        }
+
+        function onDetected(result) {
             const enrollmentNo = result.codeResult.code;
-            markAttendance(enrollmentNo);
-        });
-    }
+            if (!enrollmentNo || enrollmentNo === lastScanned) return; // Ignore empty or duplicate scans
 
-    const scanned = {};
+            console.log("Detected:", enrollmentNo);
+            lastScanned = enrollmentNo; // Store last scanned code
 
-    function markAttendance(enrollmentNo) {
-        if (scanned[enrollmentNo]) return;
+            if (students[enrollmentNo]) {
+                if (attendance[enrollmentNo] === "Absent") { // Only process if currently Absent
+                    attendance[enrollmentNo] = 'Present';
+                    const studentName = students[enrollmentNo];
 
-        scanned[enrollmentNo] = true;
+                    // Send data to Google Sheets including the logged-in coordinator
+                    sendToGoogleSheets(enrollmentNo, studentName, loggedInCoordinator);
 
-        const studentEntry = {
-            enrollment: enrollmentNo,
-            timestamp: new Date().toLocaleString(),
-            attendee: loggedInUser
-        };
+                    // Update UI
+                    const newEntry = document.createElement('p');
+                    newEntry.textContent = `✔ ${studentName} (${enrollmentNo}) marked Present by ${loggedInCoordinator}.`;
+                    outputDiv.prepend(newEntry); // Add to top
+                } else {
+                     console.log(`Student ${enrollmentNo} already marked Present.`);
+                     // Optionally provide feedback that they are already marked
+                     // const p = document.createElement('p');
+                     // p.textContent = `ℹ️ ${students[enrollmentNo]} (${enrollmentNo}) already marked Present.`;
+                     // p.style.color = 'blue';
+                     // outputDiv.prepend(p);
+                }
+            } else {
+                console.warn(`Scanned code ${enrollmentNo} not found in the student list.`);
+                 // Optionally provide feedback for unknown codes
+                 const p = document.createElement('p');
+                 p.textContent = `❓ Unknown code scanned: ${enrollmentNo}. Not in the loaded list.`;
+                 p.style.color = '#cc8400'; // Orange/brown color
+                 outputDiv.prepend(p);
+            }
 
-        // Show on screen
-        const outputDiv = document.getElementById('output');
-        const newEntry = document.createElement('p');
-        newEntry.textContent = `✔ ${enrollmentNo} marked Present by ${loggedInUser}`;
-        outputDiv.prepend(newEntry);
+            // Debounce: Reset lastScanned after a short delay to allow scanning the same code again if needed quickly (e.g., accidental double scan)
+            // Increased timeout slightly to prevent accidental rapid rescans better
+            setTimeout(() => { lastScanned = ""; }, 800); // Reset after 0.8 seconds
+        }
 
-        // Send to Google Sheet
-        fetch("https://script.google.com/macros/s/AKfycbwX5SX3Nw6Mn7XGzCBv6cjdhvwkI2mz9TZpbxcDhrA62q2fD39y9ceMf-S7aP756kmArA/exec", {
-            method: "POST",
-            body: JSON.stringify(studentEntry),
-            headers: { "Content-Type": "application/json" }
-        }).then(res => res.text()).then(data => {
-            console.log("Success:", data);
-        }).catch(err => {
-            console.error("Error:", err);
-        });
-    }
-</script>
+        function downloadAttendance() {
+            if (Object.keys(attendance).length === 0) {
+                alert("No attendance data available to download.");
+                return;
+            }
+
+            const updatedData = Object.keys(attendance).map(enrollmentNo => ({
+                EnrollmentNo: enrollmentNo,
+                Name: students[enrollmentNo] || 'N/A', // Handle potential missing name
+                Status: attendance[enrollmentNo]
+            }));
+
+             // Sort data by EnrollmentNo before exporting (optional but nice)
+            updatedData.sort((a, b) => String(a.EnrollmentNo).localeCompare(String(b.EnrollmentNo)));
+
+
+            const ws = XLSX.utils.json_to_sheet(updatedData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+
+            const date = new Date();
+            const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            const fileName = `Updated_Attendance_${dateString}.xlsx`;
+
+            XLSX.writeFile(wb, fileName);
+        }
+    </script>
 
 </body>
 </html>
