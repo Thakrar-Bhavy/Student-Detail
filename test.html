@@ -1,733 +1,312 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coordinator Login & Attendance Scanner</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
-    <style>
-       /* General Page Styling */
-       body {
-           font-family: 'Poppins', sans-serif;
-           text-align: center;
-           background-color: #f4f4f4;
-           margin: 0;
-           padding: 20px;
-           color: #333;
-           display: flex; /* Use flexbox for centering */
-           flex-direction: column;
-           min-height: 100vh; /* Ensure body takes full height */
-           justify-content: center; /* Center content vertically */
-           align-items: center; /* Center content horizontally */
-       }
-
-       .container { /* Wrap main content */
-           width: 100%;
-           max-width: 700px; /* Limit overall width */
-           padding: 15px;
-           box-sizing: border-box;
-       }
-
-
-       /* Header Styling */
-       h1 {
-           color: #007bff;
-           font-size: 26px;
-           font-weight: bold;
-           margin-bottom: 15px;
-       }
-
-       /* Input and Button Styling */
-       input, button {
-           padding: 12px;
-           font-size: 16px;
-           margin: 10px auto; /* Center horizontally */
-           border-radius: 5px;
-           border: 1px solid #ccc; /* Add subtle border */
-           outline: none;
-           width: 90%;
-           max-width: 400px;
-           display: block; /* Ensure block display */
-           box-sizing: border-box; /* Include padding/border in width */
-       }
-
-       /* Specific styling for file input */
-       input[type="file"] {
-           border: 1px dashed #ccc;
-           padding: 10px; /* Adjust padding */
-           background-color: #fff;
-           cursor: pointer;
-       }
-        input[type="file"]::file-selector-button { /* Style the default button */
-             padding: 8px 12px;
-             border: none;
-             background-color: #007bff;
-             color: white;
-             border-radius: 4px;
-             cursor: pointer;
-             margin-right: 10px;
-         }
-
-       button {
-           background: #28a745;
-           color: white;
-           cursor: pointer;
-           transition: background-color 0.3s;
-           font-weight: bold;
-           border: none; /* Remove border for buttons */
-       }
-
-       button:hover {
-           background: #218838;
-       }
-        button:disabled { /* Style for disabled button */
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-
-
-       /* Login Section Specifics */
-       #loginSection {
-           background-color: #fff;
-           padding: 30px 20px;
-           border-radius: 8px;
-           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-           max-width: 450px;
-           margin: 20px auto; /* Adjusted margin */
-           width: 95%; /* Make responsive */
-       }
-
-       #loginSection h2 {
-           color: #007bff;
-           margin-bottom: 20px;
-       }
-
-       #loginError {
-           color: #dc3545;
-           font-size: 14px;
-           margin-top: 10px;
-           min-height: 18px; /* Reserve space */
-           font-weight: bold;
-       }
-
-       #logoutBtn {
-           background-color: #dc3545; /* Red for logout */
-           margin-top: 5px; /* Reduced margin */
-           margin-bottom: 15px; /* Added bottom margin */
-           width: auto; /* Let button size naturally */
-           padding: 10px 20px; /* Adjust padding */
-           display: inline-block; /* Make it inline-block */
-           max-width: 200px; /* Control max width */
-       }
-       #logoutBtn:hover {
-           background-color: #c82333;
-       }
-
-        /* Attendance Section (Initially Hidden) */
-        #attendanceSection {
-            display: none; /* Hide by default */
-            margin-top: 20px;
-            background-color: #fff; /* Give it a background */
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            width: 100%; /* Take full width of container */
-            box-sizing: border-box;
-        }
-
-        #loggedInUser {
-            font-size: 14px;
-            color: #555;
-            margin-bottom: 10px;
-            font-weight: bold;
-            text-align: right; /* Align to the right */
-            padding-right: 10px;
-        }
-
-       /* Scanner Styling */
-       #scanner {
-           width: 100%; /* Take full width */
-           max-width: 550px; /* Slightly reduced max-width */
-           height: 280px; /* Slightly reduced height */
-           border: 3px solid #007bff;
-           border-radius: 8px;
-           margin: 15px auto; /* Adjusted margin */
-           background: #eee; /* Light background */
-           box-shadow: inset 0px 0px 8px rgba(0, 0, 0, 0.2);
-           overflow: hidden;
-           position: relative; /* Needed for drawing */
-       }
-
-       /* --- Add styles for video and canvas --- */
-        #scanner video, #scanner canvas {
-           /* Important: Ensure video/canvas fill the container */
-           position: absolute;
-           top: 0;
-           left: 0;
-           width: 100%;
-           height: 100%;
-           object-fit: cover; /* Cover the area */
-       }
-
-       .drawingBuffer {
-           position: absolute;
-           top: 0;
-           left: 0;
-           width: 100%;
-           height: 100%;
-       }
-
-
-       /* Make scanner responsive on mobile */
-       @media (max-width: 768px) {
-           #scanner {
-               width: 98%; /* Closer to edge */
-               height: 250px;
-           }
-       }
-
-        /* Status Message Area */
-        #statusMessage {
-            margin-top: 10px;
-            font-weight: bold;
-            color: #007bff;
-            min-height: 20px; /* Reserve space */
-        }
-
-       /* Output Section Styling */
-       #output {
-           margin-top: 15px;
-           font-size: 16px; /* Slightly smaller base */
-           color: #333;
-           background: #e9ecef; /* Lighter background */
-           padding: 10px;
-           border-radius: 6px;
-           display: flex;
-           flex-direction: column-reverse; /* New entries appear at the top */
-           justify-content: flex-start;
-           max-width: 600px;
-           margin: 15px auto;
-           box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1);
-           overflow-y: auto; /* Allows scrolling if many entries */
-           max-height: 250px; /* Reduced max height */
-           min-height: 60px; /* Give it some initial height */
-           border: 1px solid #ddd;
-       }
-
-       /* Each Scanned Entry Styling */
-       #output p {
-           margin: 4px 0; /* Reduced margin */
-           padding: 8px 12px; /* Adjusted padding */
-           background: #ffffff;
-           border-radius: 4px;
-           font-size: 15px; /* Slightly smaller */
-           font-weight: normal;
-           color: #333;
-           text-align: left;
-           box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1);
-           border-left: 4px solid #28a745; /* Green border */
-           animation: fadeIn 0.4s ease-out;
-           word-wrap: break-word; /* Wrap long text */
-       }
-        #output p.error { /* Style for error messages */
-            border-left-color: #dc3545; /* Red border */
-            color: #721c24;
-            background-color: #f8d7da;
-        }
-        #output p.info { /* Style for info messages */
-            border-left-color: #007bff; /* Blue border */
-            color: #004085;
-            background-color: #cce5ff;
-        }
-         #output p.warning { /* Style for warning messages */
-            border-left-color: #ffc107; /* Yellow border */
-            color: #856404;
-            background-color: #fff3cd;
-        }
-
-
-       /* Fade-in effect for new entries */
-       @keyframes fadeIn {
-           from {
-               opacity: 0;
-               transform: translateY(8px);
-           }
-           to {
-               opacity: 1;
-               transform: translateY(0);
-           }
-       }
-
-       /* Mobile Optimization */
-       @media (max-width: 480px) {
-            body { padding: 10px; }
-           .container { padding: 5px; }
-           h1 { font-size: 20px; }
-           input, button { font-size: 14px; padding: 10px;}
-            #loginSection { padding: 20px 15px; }
-            #attendanceSection { padding: 15px; }
-            #scanner { height: 200px; }
-            #output { font-size: 14px; max-height: 200px; }
-            #output p { font-size: 13px; padding: 6px 10px;}
-            #logoutBtn { padding: 8px 15px; }
-       }
-    </style>
-</head>
-<body>
-    <div class="container">
-
-        <h1>Student Attendance System</h1>
-
-        <!-- Login Section -->
-        <div id="loginSection">
-            <h2>Coordinator Login</h2>
-            <input type="text" id="username" placeholder="Username" required>
-            <input type="password" id="password" placeholder="Password" required>
-            <button id="loginBtn">Login</button>
-            <div id="loginError"></div>
-        </div>
-
-        <!-- Attendance Section (Hidden Initially) -->
-        <div id="attendanceSection">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                 <button id="logoutBtn">Logout</button>
-                 <div id="loggedInUser"></div>
-            </div>
-
-            <input type="file" id="fileInput" accept=".xlsx, .xls"/>
-             <div id="statusMessage">Please upload the student list Excel file.</div> <!-- Status Area -->
-            <div id="scanner"></div>
-            <div id="output"></div>
-            <button id="downloadBtn" style="display:none;" disabled>Download Updated Attendance</button> <!-- Start disabled -->
-        </div>
-
-    </div> <!-- End Container -->
-
-    <script>
-        // --- Coordinator Credentials ---
-        const coordinators = {
-            "coord1": "pass123",
-            "coord2": "password",
-            "coord3": "secret"
-        };
-        // --- ---
-
-        let students = {};
-        let attendance = {};
-        let lastScanned = "";
-        let scanTimeout = null; // To manage debounce timer
-        let loggedInCoordinator = null;
-        let isScannerActive = false; // Track if Quagga is supposed to be running
-        let quaggaInitialized = false; // Separate flag for successful init
-        const scriptURL = "https://script.google.com/macros/s/AKfycbyHabzwWjDzjREx2UKe_EuinrioSpZTjgd4Siqwh0zE7F18-HR1YSbCRDdP3tSCWTqpfw/exec"; // Your Script URL
-
-        // --- DOM Elements ---
-        const loginSection = document.getElementById('loginSection');
-        const attendanceSection = document.getElementById('attendanceSection');
-        const loginBtn = document.getElementById('loginBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const usernameInput = document.getElementById('username');
-        const passwordInput = document.getElementById('password');
-        const loginError = document.getElementById('loginError');
-        const loggedInUserDisplay = document.getElementById('loggedInUser');
-        const fileInput = document.getElementById('fileInput');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const scannerDiv = document.getElementById('scanner');
-        const outputDiv = document.getElementById('output');
-        const statusMessage = document.getElementById('statusMessage'); // Get status element
-
-        // --- Event Listeners ---
-        loginBtn.addEventListener('click', handleLogin);
-        logoutBtn.addEventListener('click', handleLogout);
-        fileInput.addEventListener('change', handleFile, false);
-        downloadBtn.addEventListener('click', downloadAttendance, false);
-        passwordInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleLogin());
-        usernameInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleLogin());
-
-
-        // --- Functions ---
-
-        function showMessage(msg, type = 'info') {
-             // Types: info, success, error, warning
-             console.log(`[${type.toUpperCase()}] ${msg}`); // Also log to console
-             const p = document.createElement('p');
-             p.textContent = msg;
-             p.className = type; // Use class for styling
-             outputDiv.prepend(p);
-
-             // Keep output div scrolled to top (most recent message)
-            outputDiv.scrollTop = 0;
-
-             // Update status message area as well for key status
-             if (type === 'error' || msg.includes('Ready to scan') || msg.includes('Initializing Scanner')) {
-                 statusMessage.textContent = msg;
-                 statusMessage.className = type; // Style status message too
-             }
-        }
-
-        function handleLogin() {
-            const username = usernameInput.value.trim();
-            const password = passwordInput.value;
-            loginError.textContent = '';
-            loginBtn.disabled = true; // Disable button during check
-
-            if (!username || !password) {
-                loginError.textContent = 'Please enter username and password.';
-                loginBtn.disabled = false;
-                return;
-            }
-
-            // Simulate async check if needed, otherwise direct check is fine
-            setTimeout(() => { // Using timeout to allow UI update (button disabled)
-                if (coordinators[username] && coordinators[username] === password) {
-                    loggedInCoordinator = username;
-                    loginSection.style.display = 'none';
-                    attendanceSection.style.display = 'block';
-                    loggedInUserDisplay.textContent = `User: ${loggedInCoordinator}`;
-                    usernameInput.value = '';
-                    passwordInput.value = '';
-                    resetAttendanceState(); // Reset state for the new session
-                } else {
-                    loginError.textContent = 'Invalid username or password.';
-                    passwordInput.value = '';
-                }
-                loginBtn.disabled = false; // Re-enable button
-            }, 50); // Short delay
-        }
-
-        function handleLogout() {
-            stopScanning(); // Stop scanner *before* hiding elements
-            loggedInCoordinator = null;
-            attendanceSection.style.display = 'none';
-            loginSection.style.display = 'block';
-            loggedInUserDisplay.textContent = '';
-            loginError.textContent = '';
-            usernameInput.value = '';
-            passwordInput.value = '';
-            resetAttendanceState(); // Clear data and UI state
-        }
-
-        function resetAttendanceState() {
-            students = {};
-            attendance = {};
-            lastScanned = "";
-            if (scanTimeout) clearTimeout(scanTimeout); // Clear any pending scan reset
-            outputDiv.innerHTML = ''; // Clear output display
-            fileInput.value = null; // Reset file input
-            downloadBtn.style.display = 'none'; // Hide download button
-            downloadBtn.disabled = true; // Ensure it's disabled
-            scannerDiv.innerHTML = ''; // Clear scanner area visually
-            statusMessage.textContent = 'Please upload the student list Excel file.'; // Reset status
-            statusMessage.className = 'info';
-            // isScannerActive is handled by stopScanning
-            // quaggaInitialized is handled by stopScanning
-        }
-
-        function handleFile(event) {
-            const file = event.target.files[0];
-            if (!file || !loggedInCoordinator) return;
-
-            showMessage('Processing Excel file...', 'info');
-            downloadBtn.style.display = 'block'; // Show button but keep disabled
-            downloadBtn.disabled = true;
-            stopScanning(); // Stop any previous scanner instance before processing
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheetName = workbook.SheetNames[0];
-                    const firstSheet = workbook.Sheets[firstSheetName];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: "" }); // Read as array, handle empty cells
-
-                    if (!jsonData || jsonData.length < 2) {
-                        throw new Error("Sheet is empty or has no header/data rows.");
-                    }
-
-                    const headers = jsonData[0].map(h => String(h).trim().toLowerCase()); // Lowercase for case-insensitive match
-                    const enrollmentIndex = headers.indexOf("enrollmentno");
-                    const nameIndex = headers.indexOf("name");
-
-                    if (enrollmentIndex === -1 || nameIndex === -1) {
-                         throw new Error("Missing required columns: 'EnrollmentNo' and/or 'Name'. Check header row.");
-                    }
-
-                    // Reset data before loading new file
-                    students = {};
-                    attendance = {};
-                    outputDiv.innerHTML = ''; // Clear previous messages
-
-                    let studentCount = 0;
-                    for (let i = 1; i < jsonData.length; i++) {
-                        const row = jsonData[i];
-                        const enrollmentNo = String(row[enrollmentIndex]).trim();
-                        const name = String(row[nameIndex]).trim();
-
-                        if (enrollmentNo) { // Only add if EnrollmentNo is not empty
-                            students[enrollmentNo] = name || 'N/A'; // Use N/A if name is empty
-                            attendance[enrollmentNo] = 'Absent';
-                            studentCount++;
-                        }
-                    }
-
-                    if (studentCount > 0) {
-                        showMessage(`File loaded. Found ${studentCount} students. Initializing Scanner...`, 'success');
-                        downloadBtn.disabled = false; // Enable download button
-                        // IMPORTANT: Delay scanner start slightly to ensure DOM is ready
-                        setTimeout(startScanning, 100);
-                    } else {
-                         showMessage("No valid student data found in the file. Ensure 'EnrollmentNo' column has values.", 'warning');
-                         downloadBtn.style.display = 'none'; // Hide button if no data
-                    }
-
-                } catch (error) {
-                    console.error("Error processing Excel file:", error);
-                    showMessage(`Error processing file: ${error.message}. Check format and columns ('EnrollmentNo', 'Name').`, 'error');
-                    fileInput.value = null; // Allow re-selection
-                    downloadBtn.style.display = 'none';
-                }
-            };
-            reader.onerror = function(e) {
-                 console.error("FileReader error:", e);
-                 showMessage("Error reading the selected file.", 'error');
-                 downloadBtn.style.display = 'none';
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-
-        function startScanning() {
-             if (isScannerActive || Object.keys(students).length === 0) {
-                 console.warn("Scanner start prevented. Active:", isScannerActive, "Students:", Object.keys(students).length);
-                 return;
-             }
-
-             // Ensure scanner div is visible and has dimensions
-             if (scannerDiv.offsetParent === null || scannerDiv.offsetWidth === 0) {
-                 showMessage("Cannot start scanner: Scanner area is not visible. Retrying...", "warning");
-                 // Retry after a short delay, hoping the layout settles
-                 setTimeout(startScanning, 300);
-                 return;
-             }
-
-
-             console.log("Attempting to initialize Quagga...");
-             isScannerActive = true; // Mark as attempting to start
-             statusMessage.textContent = 'Initializing camera...';
-             statusMessage.className = 'info';
-             scannerDiv.innerHTML = ''; // Clear previous content just in case
-
-
-             Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: scannerDiv,
-                    constraints: {
-                         width: { min: 640 }, // Request minimum width
-                         height: { min: 480 }, // Request minimum height
-                         facingMode: "environment",
-                         // aspectRatio: { min: 1, max: 2 } // Can sometimes cause issues, comment out if needed
-                    },
-                    area: { top: "10%", right: "10%", left: "10%", bottom: "10%" } // Focus scanning area
-                },
-                locator: { patchSize: "medium", halfSample: true },
-                numOfWorkers: navigator.hardwareConcurrency || 2, // Limit workers if needed
-                decoder: { readers: ["code_128_reader"] },
-                locate: true,
-             }, function(err) {
-                 if (err) {
-                     console.error("❌ Quagga init failed:", err);
-                     showMessage(`Scanner Error: ${err.message}. Check camera permissions and ensure no other app is using the camera.`, 'error');
-                     isScannerActive = false; // Failed to start
-                     quaggaInitialized = false;
-                     scannerDiv.innerHTML = '<p style="color:red; padding: 10px;">Camera Initialization Failed</p>'; // Show error in scanner div
-                     return;
-                 }
-                 console.log("✅ Quagga initialization finished. Starting stream...");
-                 Quagga.start();
-                 quaggaInitialized = true; // Mark as successfully initialized
-
-                 // --- Register Event Listeners Only After Successful Init ---
-                 Quagga.onProcessed(handleProcessed); // For drawing boxes
-                 Quagga.offDetected(onDetected); // Remove previous listener if any
-                 Quagga.onDetected(onDetected); // Add the main detection listener
-
-                 showMessage("Ready to scan.", 'success'); // Update status
-                 console.log("Scanner is active and ready.");
-             });
-         }
-
-        function handleProcessed(result) {
-            // For drawing bounding boxes (visual feedback)
-            const drawingCtx = Quagga.canvas.ctx.overlay;
-            const drawingCanvas = Quagga.canvas.dom.overlay;
-
-             if (result && drawingCtx && drawingCanvas) {
-                drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
-                if (result.boxes) {
-                    result.boxes.filter(box => box !== result.box).forEach(box => {
-                        Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, { color: "green", lineWidth: 2 });
-                    });
-                }
-                if (result.box) {
-                    Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, { color: "blue", lineWidth: 2 });
-                }
-                 if (result.codeResult && result.codeResult.code) {
-                    // Optionally draw detected code line
-                    // Quagga.ImageDebug.drawPath(result.line, {x: 'x', y: 'y'}, drawingCtx, {color: 'red', lineWidth: 3});
-                }
-            }
-        }
-
-
-         function stopScanning() {
-            if (quaggaInitialized) { // Only stop if it was successfully initialized
-                console.log("Stopping Quagga scanner...");
-                try {
-                    Quagga.offDetected(onDetected);
-                    Quagga.offProcessed(handleProcessed);
-                    Quagga.stop();
-                    console.log("Quagga stopped successfully.");
-                } catch (err) {
-                     console.error("Error stopping Quagga:", err);
-                     // May happen if stream wasn't fully started or already stopped
-                } finally {
-                     quaggaInitialized = false;
-                }
-            } else {
-                 console.log("Scanner was not running or initialized, no need to stop.");
-            }
-             isScannerActive = false; // Mark as not active
-             scannerDiv.innerHTML = ''; // Clear the scanner view
-             statusMessage.textContent = 'Scanner stopped.';
-             statusMessage.className = 'info';
-        }
-
-        function sendToGoogleSheets(enrollmentNo, studentName, coordinator) {
-             if (!coordinator) {
-                 showMessage(`Error: Cannot record attendance for ${enrollmentNo}. Coordinator not logged in. Please logout and login again.`, 'error');
-                 return;
-             }
-             const formData = new FormData();
-             formData.append("EnrollmentNo", enrollmentNo);
-             formData.append("Name", studentName);
-             formData.append("Status", "Present");
-             formData.append("Coordinator", coordinator);
-             formData.append("Timestamp", new Date().toLocaleString());
-
-             console.log(`Sending to Sheets: ${enrollmentNo}, ${studentName}, Present, ${coordinator}`);
-
-             fetch(scriptURL, { method: "POST", body: formData })
-             .then(response => {
-                 if (!response.ok) {
-                    // Try to get error text from response body
-                     return response.text().then(text => {
-                         throw new Error(`Network response was not ok (${response.status}). Server response: ${text || 'No details'}`);
-                     });
-                 }
-                 const contentType = response.headers.get("content-type");
-                 if (contentType && contentType.includes("application/json")) {
-                     return response.json();
-                 } else {
-                     return response.text().then(text => {
-                         console.log("Received non-JSON response from Google Script:", text);
-                         return { result: "success (non-json response)" };
-                     });
-                 }
-             })
-             .then(data => {
-                 console.log("Google Sheets Success:", data);
-                 // Optional: Add a small success flash? The main UI update is usually enough.
-             })
-             .catch(error => {
-                 console.error("Error sending to Google Sheets:", error);
-                 showMessage(`⚠️ Network/Sheet Error for ${studentName} (${enrollmentNo}): ${error.message}. Data NOT saved online.`, 'error');
-             });
-        }
-
-        function onDetected(result) {
-            const enrollmentNo = result.codeResult.code;
-            if (!enrollmentNo || enrollmentNo === lastScanned) {
-                // console.log("Ignoring duplicate/empty scan:", enrollmentNo);
-                return; // Ignore empty or immediate duplicate scans
-            }
-
-            console.log("Detected barcode:", enrollmentNo);
-            lastScanned = enrollmentNo; // Store last scanned code to prevent immediate re-scan
-
-            // Clear previous debounce timer if exists
-            if (scanTimeout) clearTimeout(scanTimeout);
-
-
-            if (students[enrollmentNo]) {
-                if (attendance[enrollmentNo] === "Absent") { // Only process if currently Absent
-                    attendance[enrollmentNo] = 'Present';
-                    const studentName = students[enrollmentNo];
-                    showMessage(`✔ ${studentName} (${enrollmentNo}) marked Present by ${loggedInCoordinator}.`, 'success');
-                    sendToGoogleSheets(enrollmentNo, studentName, loggedInCoordinator);
-                } else {
-                     console.log(`Student ${enrollmentNo} already marked Present.`);
-                     showMessage(`ℹ️ ${students[enrollmentNo]} (${enrollmentNo}) already marked Present.`, 'info');
-                }
-            } else {
-                console.warn(`Scanned code ${enrollmentNo} not found in the student list.`);
-                 showMessage(`❓ Unknown code scanned: ${enrollmentNo}. Not in loaded list.`, 'warning');
-            }
-
-            // Debounce: Reset lastScanned after a delay to allow scanning again later
-            scanTimeout = setTimeout(() => {
-                lastScanned = "";
-                // console.log("Scan debounce reset.");
-            }, 1000); // Reset after 1 second
-        }
-
-        function downloadAttendance() {
-            if (Object.keys(attendance).length === 0) {
-                showMessage("No attendance data available to download.", "warning");
-                return;
-            }
-
-             // Add a status message while preparing download
-             showMessage("Preparing download...", "info");
-             downloadBtn.disabled = true; // Disable while processing
-
-
-            // Use setTimeout to allow the UI message to render before potentially heavy operation
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Configuration ---
+    const GAS_WEB_APP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL'; // <--- PASTE YOUR DEPLOYED URL HERE
+
+    // --- Hardcoded Authorized Users (Replace with a secure method in production) ---
+    const AUTHORIZED_USERS = {
+        "coordinator1": "pass1",
+        "coordinator2": "pass2",
+        "coordinator3": "pass3"
+        // Add more users as needed
+    };
+
+    // --- Hardcoded Student Data (Replace with API lookup or better method in production) ---
+    const STUDENT_DATA = {
+        "ENROLL1001": "Alice Smith",
+        "ENROLL1002": "Bob Johnson",
+        "ENROLL1003": "Charlie Brown",
+        "ENROLL1004": "Diana Prince",
+        // Add all 1000+ students here or load dynamically
+        // For very large lists, consider a more efficient lookup method
+    };
+
+
+    // --- State Variables ---
+    let currentAttendee = null;
+    let html5QrCode = null;
+    let isScanning = false;
+    let lastScanTime = 0; // To prevent rapid duplicate scans
+    const SCAN_DEBOUNCE_MS = 1500; // Minimum ms between scans of the SAME code
+
+    // --- DOM Elements ---
+    const loginSection = document.getElementById('login-section');
+    const scannerSection = document.getElementById('scanner-section');
+    const loginForm = document.getElementById('login-form');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const loginError = document.getElementById('login-error');
+    const attendeeNameDisplay = document.getElementById('attendee-name-display');
+    const logoutButton = document.getElementById('logout-button');
+    const qrReaderElement = document.getElementById('reader');
+    const scannedList = document.getElementById('scanned-list');
+    const statusMessage = document.getElementById('status-message');
+    const backendStatus = document.getElementById('backend-status');
+    const loadingIndicator = document.getElementById('loading-indicator');
+
+
+    // --- Functions ---
+
+    // Show/Hide Sections
+    function showSection(sectionId) {
+        loginSection.classList.remove('active');
+        scannerSection.classList.remove('active');
+        document.getElementById(sectionId)?.classList.add('active');
+    }
+
+    // Show Loading Indicator
+    function showLoading(show = true) {
+        loadingIndicator.classList.toggle('active', show);
+    }
+
+    // Update Backend Status Message
+    function updateBackendStatus(message, type = 'info') { // type = 'info', 'success', 'error', 'sending'
+        backendStatus.textContent = message;
+        backendStatus.className = `status-indicator ${type}`; // Add class for styling
+        // Optionally clear after a delay
+        if (type === 'success' || type === 'error') {
             setTimeout(() => {
-                try {
-                    const updatedData = Object.keys(students) // Iterate through loaded students to maintain order
-                        .map(enrollmentNo => ({
-                            EnrollmentNo: enrollmentNo,
-                            Name: students[enrollmentNo] || 'N/A',
-                            Status: attendance[enrollmentNo] || 'Absent' // Ensure status exists
-                        }))
-                         .sort((a, b) => String(a.EnrollmentNo).localeCompare(String(b.EnrollmentNo))); // Sort
-
-                    const ws = XLSX.utils.json_to_sheet(updatedData);
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, "Attendance");
-
-                    const date = new Date();
-                    const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                    const fileName = `Updated_Attendance_${loggedInCoordinator}_${dateString}.xlsx`; // Include coordinator in filename
-
-                    XLSX.writeFile(wb, fileName);
-                    showMessage("Attendance file downloaded.", "success");
-                } catch (error) {
-                    console.error("Error preparing download:", error);
-                     showMessage("Error creating the Excel file for download.", "error");
-                } finally {
-                    // Re-enable button regardless of success/failure
-                    downloadBtn.disabled = false;
+                if (backendStatus.textContent === message) { // Clear only if message hasn't changed
+                     backendStatus.textContent = '';
+                     backendStatus.className = 'status-indicator';
                 }
+            }, 4000); // Clear after 4 seconds
+        }
+    }
 
-            }, 50); // Short delay
+    // Handle Login
+    function handleLogin(event) {
+        event.preventDefault();
+        loginError.textContent = '';
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value;
+
+        if (AUTHORIZED_USERS[username] && AUTHORIZED_USERS[username] === password) {
+            currentAttendee = username;
+            attendeeNameDisplay.textContent = currentAttendee;
+            showSection('scanner-section');
+            startScanner();
+            // Add safety listener *after* successful login
+            window.addEventListener('beforeunload', beforeUnloadHandler);
+        } else {
+            loginError.textContent = 'Invalid username or password.';
+        }
+        // Clear password field after attempt
+        passwordInput.value = '';
+    }
+
+    // Handle Logout
+    function handleLogout() {
+        stopScanner();
+        currentAttendee = null;
+        usernameInput.value = '';
+        passwordInput.value = '';
+        scannedList.innerHTML = ''; // Clear scanned list on logout
+        statusMessage.textContent = 'Logged out.';
+        backendStatus.textContent = '';
+         // Remove safety listener on logout
+        window.removeEventListener('beforeunload', beforeUnloadHandler);
+        showSection('login-section');
+    }
+
+    // Look up student name (simple version)
+    function getStudentName(enrollmentNo) {
+        return STUDENT_DATA[enrollmentNo] || "Unknown Student";
+    }
+
+    // Display Scanned Item Locally
+    function displayScanResult(enrollmentNo, studentName, timestamp) {
+        const listItem = document.createElement('li');
+        const scanTime = new Date(timestamp).toLocaleTimeString();
+
+        listItem.innerHTML = `
+            <span class="scan-details"><strong>${enrollmentNo}</strong> - ${studentName}</span>
+            <span class="scan-time">${scanTime}</span>
+        `;
+        // Add to the top of the list
+        scannedList.prepend(listItem);
+
+         // Optional: Limit the list size
+        const MAX_LIST_ITEMS = 20;
+        while (scannedList.children.length > MAX_LIST_ITEMS) {
+            scannedList.removeChild(scannedList.lastChild);
+        }
+    }
+
+
+    // Send Data to Google Apps Script
+    async function sendDataToBackend(enrollmentNo, studentName, attendeeName, timestamp) {
+        showLoading(true);
+        updateBackendStatus('Sending...', 'sending');
+
+        const payload = {
+            enrollmentNo,
+            studentName,
+            attendeeName,
+            timestamp
+        };
+
+        try {
+            const response = await fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                mode: 'cors', // Necessary for cross-origin requests
+                // redirect: "follow", // GAS sometimes redirects, follow is safer
+                cache: 'no-cache',
+                 // Important: Send as text for simple GAS doPost parsing or handle JSON correctly
+                // headers: { 'Content-Type': 'text/plain', }, // If parsing e.postData.contents directly
+                // body: JSON.stringify(payload)
+
+                // Sending as JSON (Requires GAS to parse JSON)
+                headers: { 'Content-Type': 'application/json', },
+                body: JSON.stringify(payload)
+            });
+
+            const resultText = await response.text(); // Read response as text
+
+            if (resultText.trim().toLowerCase() === 'success') {
+                 console.log('Data sent successfully:', payload);
+                 updateBackendStatus('Success!', 'success');
+            } else {
+                 console.error('Backend Error:', resultText);
+                 updateBackendStatus(`Error: ${resultText}`, 'error');
+                 // Maybe add retry logic here in a real app
+            }
+
+        } catch (error) {
+            console.error('Network or fetch Error:', error);
+            updateBackendStatus(`Network Error: ${error.message}`, 'error');
+            // Implement offline queueing logic here if needed
+        } finally {
+            showLoading(false);
+        }
+    }
+
+
+    // --- QR Code Scanner Logic ---
+
+    // Success callback when a QR code is scanned
+    function onScanSuccess(decodedText, decodedResult) {
+        // Handle scan results here.
+        console.log(`Code matched = ${decodedText}`, decodedResult);
+
+        const now = Date.now();
+        // Basic debounce specifically for *rapid* rescans of the *same* code
+        if (now - lastScanTime < SCAN_DEBOUNCE_MS) {
+             console.log("Debounced rapid scan.");
+             return; // Too soon since the last scan
+        }
+        lastScanTime = now;
+
+        statusMessage.textContent = `Scanned: ${decodedText}`;
+
+        const enrollmentNo = decodedText; // Assume QR code is the enrollment number
+        const studentName = getStudentName(enrollmentNo);
+        const timestamp = new Date().toISOString(); // Use ISO format for consistency
+
+        // 1. Display immediately on screen
+        displayScanResult(enrollmentNo, studentName, timestamp);
+
+        // 2. Send data to backend (asynchronously)
+        if (currentAttendee && GAS_WEB_APP_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL') {
+             sendDataToBackend(enrollmentNo, studentName, currentAttendee, timestamp);
+        } else if (GAS_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL') {
+            updateBackendStatus('Error: Backend URL not configured!', 'error');
         }
 
-    </script>
+        // Optional: Add a brief vibration on successful scan
+        if (navigator.vibrate) {
+            navigator.vibrate(100); // Vibrate for 100ms
+        }
+    }
 
-</body>
-</html>
+    // Optional: Error callback for the scanner
+    function onScanFailure(error) {
+        // Handle scan errors, like camera permissions or no QR code found
+        // This often fires continuously when no code is in view, so keep logging minimal.
+        // console.warn(`Code scan error = ${error}`);
+        // statusMessage.textContent = `Scanning... (Point camera at barcode)`;
+    }
+
+    // Start the scanner
+    function startScanner() {
+        if (isScanning) return; // Already scanning
+
+        // Create instance only if it doesn't exist
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode("reader");
+        }
+
+
+        statusMessage.textContent = "Requesting camera access...";
+
+        // Configuration for the scanner
+        const config = {
+            fps: 10, // Frames per second to scan
+            qrbox: { width: 250, height: 150 }, // Size of the scanning box (optional)
+            // Use facingMode: environment for back camera
+            facingMode: "environment",
+            // aspectRatio: 1.0 // You might need to adjust this based on device aspect ratio
+        };
+
+
+        // Start scanning
+        html5QrCode.start(
+            { facingMode: "environment" }, // Or specify deviceId if known
+            config,
+            onScanSuccess,
+            onScanFailure
+        ).then(() => {
+            console.log("Scanner started successfully.");
+            statusMessage.textContent = "Scanning... Point camera at barcode.";
+            isScanning = true;
+        }).catch(err => {
+            console.error("Failed to start scanner:", err);
+            statusMessage.textContent = `Error starting scanner: ${err}`;
+             qrReaderElement.innerHTML = `<p style="color: red; padding: 10px;">Could not start camera. Please ensure permissions are granted and try refreshing.</p>`;
+        });
+    }
+
+    // Stop the scanner
+    function stopScanner() {
+        if (html5QrCode && isScanning) {
+            html5QrCode.stop().then(() => {
+                console.log("Scanner stopped successfully.");
+                isScanning = false;
+                statusMessage.textContent = "Scanner stopped.";
+                // Optionally clear the reader element content
+                // qrReaderElement.innerHTML = '';
+            }).catch(err => {
+                console.error("Failed to stop scanner:", err);
+                statusMessage.textContent = "Could not stop scanner properly.";
+            });
+        } else {
+            isScanning = false; // Ensure state is correct even if scanner wasn't active/instance exists
+        }
+    }
+
+
+     // --- Prevent Accidental Data Loss ---
+     function beforeUnloadHandler(event) {
+        // Show confirmation message only if logged in
+        if (currentAttendee) {
+             event.preventDefault(); // Standard practice
+             event.returnValue = 'Are you sure you want to leave? Unsaved scans might be lost.'; // For older browsers
+             return 'Are you sure you want to leave? Unsaved scans might be lost.'; // For modern browsers
+        }
+        // If not logged in, allow navigation without prompt
+     }
+
+
+    // --- Event Listeners ---
+    loginForm.addEventListener('submit', handleLogin);
+    logoutButton.addEventListener('click', handleLogout);
+
+    // --- Initial Setup ---
+    if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL') {
+        console.error("CRITICAL: Google Apps Script Web App URL is not set in script.js!");
+        // Display a warning to the user? Maybe in the login error area.
+        loginError.textContent = "App configuration error: Backend URL missing.";
+    }
+
+    showSection('login-section'); // Start on the login page
+
+}); // End DOMContentLoaded
