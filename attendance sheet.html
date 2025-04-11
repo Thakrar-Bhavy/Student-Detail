@@ -1,266 +1,247 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fast Student Attendance Scanner</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
-    <style>
-       /* General Page Styling */
-body {
-    font-family: 'Poppins', sans-serif;
-    text-align: center;
-    background-color: #f4f4f4;
-    margin: 0;
-    padding: 20px;
-    color: #333;
-}
-
-/* Header Styling */
-h1 {
-    color: #007bff;
-    font-size: 26px;
-    font-weight: bold;
-    margin-bottom: 15px;
-}
-
-/* Input and Button Styling */
-input, button {
-    padding: 12px;
-    font-size: 16px;
-    margin: 10px;
-    border-radius: 5px;
-    border: none;
-    outline: none;
-    width: 90%;
-    max-width: 400px;
-    display: block;
-    margin: 10px auto;
-}
-
-button {
-    background: #28a745;
-    color: white;
-    cursor: pointer;
-    transition: 0.3s;
-    font-weight: bold;
-}
-
-button:hover {
-    background: #218838;
-}
-
-/* Scanner Styling */
-#scanner {
-    width: 100%;
-    max-width: 600px;
-    height: 300px;
-    border: 4px solid #007bff;
-    border-radius: 12px;
-    margin: 20px auto;
-    background: #fff;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
-    overflow: hidden;
-}
-
-/* Make scanner responsive on mobile */
-@media (max-width: 768px) {
-    #scanner {
-        width: 95%;
-        height: 250px;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Attendance Tracker</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      text-align: center;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+      color: #333;
     }
-}
 
-/* Output Section Styling */
-#output {
-    margin-top: 20px;
-    font-size: 18px;
-    font-weight: bold;
-    color: #155724;
-    background: #d4edda;
-    padding: 12px;
-    border-radius: 6px;
-    display: flex;
-    flex-direction: column; /* ✅ Ensures new entries appear at the top */
-    justify-content: flex-start; 
-    max-width: 600px;
-    margin: 20px auto;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-    overflow-y: auto; /* Allows scrolling if many entries */
-    max-height: 300px;
-}
-
-/* Each Scanned Entry Styling */
-#output p {
-    margin: 5px 0;
-    padding: 10px;
-    background: #ffffff;
-    border-radius: 5px;
-    font-size: 16px;
-    font-weight: bold;
-    color: #333;
-    text-align: left;
-    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-    border-left: 5px solid #28a745;
-}
-
-/* Newest entry styling (animation) */
-#output p:first-child {
-    background: #c3e6cb;
-    animation: fadeIn 0.3s ease-in-out;
-}
-
-/* Fade-in effect for new entries */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Mobile Optimization */
-@media (max-width: 480px) {
     h1 {
-        font-size: 22px;
+      color: #007bff;
+      font-size: 26px;
+      font-weight: bold;
+      margin-bottom: 20px;
     }
 
     input, button {
-        width: 95%;
-        font-size: 14px;
+      padding: 12px;
+      font-size: 16px;
+      margin: 10px auto;
+      border-radius: 6px;
+      border: none;
+      width: 90%;
+      max-width: 400px;
+      display: block;
+      outline: none;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+
+    button {
+      background: #28a745;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #218838;
     }
 
     #scanner {
-        height: 220px;
+      width: 100%;
+      max-width: 600px;
+      height: 300px;
+      border: 4px solid #007bff;
+      border-radius: 12px;
+      margin: 20px auto;
+      background: #fff;
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
     }
 
     #output {
-        font-size: 16px;
+      margin-top: 20px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #155724;
+      background: #d4edda;
+      padding: 12px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      max-width: 600px;
+      margin: 20px auto;
+      max-height: 300px;
+      overflow-y: auto;
     }
-}
 
-    </style>
+    #output p {
+      margin: 5px 0;
+      padding: 10px;
+      background: #ffffff;
+      border-radius: 5px;
+      color: #333;
+      text-align: left;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+      border-left: 5px solid #28a745;
+    }
+
+    #output p:first-child {
+      background: #c3e6cb;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
 </head>
 <body>
 
-    <h1>Fast Student Attendance Scanner</h1>
+  <h1>Student Attendance Tracker</h1>
+
+  <!-- Login Section -->
+  <div id="loginSection">
+    <input type="text" id="coordinatorName" placeholder="Coordinator Name">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="validateLogin()">Login</button>
+  </div>
+
+  <!-- Main Section -->
+  <div id="mainSection" style="display:none;">
     <input type="file" id="fileInput" accept=".xlsx, .xls"/>
     <button id="downloadBtn" style="display:none;">Download Updated Attendance</button>
-
     <div id="scanner"></div>
     <div id="output"></div>
+  </div>
 
-    <script>
-        let students = {};
-        let attendance = {};
-        let lastScanned = ""; // Avoid duplicate scans
-        const scriptURL = "https://script.google.com/macros/s/AKfycbztY6j08op4qKuRF5bmgs9fkvG4HOrXzOlteEfQNyqSFh_wuyHjaHoggfyfZfLTDb8PvQ/exec";
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbztY6j08op4qKuRF5bmgs9fkvG4HOrXzOlteEfQNyqSFh_wuyHjaHoggfyfZfLTDb8PvQ/exec";
+    
+    let students = {}, attendance = {}, lastScanned = "", coordinator = "";
+    Quagga.initialized = false;
 
-        document.getElementById('fileInput').addEventListener('change', handleFile, false);
-        document.getElementById('downloadBtn').addEventListener('click', downloadAttendance, false);
+    window.onbeforeunload = function() {
+      return "Are you sure you want to leave? Unsaved data may be lost.";
+    };
 
-        function handleFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+    function validateLogin() {
+      const name = document.getElementById("coordinatorName").value.trim();
+      const pass = document.getElementById("password").value.trim();
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+      if (name && pass === "admin123") {
+        coordinator = name;
+        document.getElementById("loginSection").style.display = "none";
+        document.getElementById("mainSection").style.display = "block";
+      } else {
+        alert("Invalid login. Try again.");
+      }
+    }
 
-                jsonData.forEach(student => {
-                    students[student.EnrollmentNo] = student.Name;
-                    attendance[student.EnrollmentNo] = 'Absent';
-                });
+    document.getElementById('fileInput').addEventListener('change', handleFile, false);
+    document.getElementById('downloadBtn').addEventListener('click', downloadAttendance, false);
 
-                document.getElementById('downloadBtn').style.display = "block";
-                startScanning();
-            };
-            reader.readAsArrayBuffer(file);
+    function handleFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+        jsonData.forEach(student => {
+          students[student.EnrollmentNo] = student.Name;
+          attendance[student.EnrollmentNo] = 'Absent';
+        });
+
+        document.getElementById('downloadBtn').style.display = "block";
+        startScanner();
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function startScanner() {
+      if (Quagga.initialized) return;
+
+      Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: document.querySelector('#scanner'),
+          constraints: {
+            facingMode: "environment"
+          }
+        },
+        decoder: { readers: ["code_128_reader"] }
+      }, function(err) {
+        if (err) {
+          console.error("Quagga init error:", err);
+          return;
         }
+        Quagga.start();
+        Quagga.initialized = true;
+        Quagga.onDetected(onDetected);
+      });
+    }
 
-        function startScanning() {
-            if (Quagga.initialized) {
-                console.log("Quagga already initialized.");
-                return;
-            }
+    function onDetected(result) {
+      const enrollmentNo = result.codeResult.code;
+      if (enrollmentNo === lastScanned) return;
+      lastScanned = enrollmentNo;
 
-            Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: document.querySelector('#scanner'),
-                    constraints: {
-                        facingMode: "environment" // 📷 Prefer back camera
-                    }
-                },
-                decoder: { readers: ["code_128_reader"] }
-            }, function(err) {
-                if (err) {
-                    console.error("❌ Quagga init failed:", err);
-                    return;
-                }
-                Quagga.start();
-                Quagga.onDetected(onDetected);
-                Quagga.initialized = true;
-            });
-        }
+      if (students[enrollmentNo] && attendance[enrollmentNo] === "Absent") {
+        attendance[enrollmentNo] = 'Present';
+        sendToSheet(enrollmentNo, students[enrollmentNo]);
 
-        function sendToGoogleSheets(enrollmentNo, studentName) {
-            const formData = new FormData();
-            formData.append("EnrollmentNo", enrollmentNo);
-            formData.append("Name", studentName);
-            formData.append("Status", "Present");
+        const div = document.getElementById("output");
+        const p = document.createElement("p");
+        p.textContent = `✔ ${students[enrollmentNo]} (${enrollmentNo}) marked Present`;
+        div.prepend(p);
+      }
 
-            fetch(scriptURL, {
-                method: "POST",
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => console.log("Success:", data))
-            .catch(error => console.error("Error:", error));
-        }
+      setTimeout(() => lastScanned = "", 500);
+    }
 
-        function onDetected(result) {
-            const enrollmentNo = result.codeResult.code;
-            if (enrollmentNo === lastScanned) return; // Prevent multiple scans of same student
-            lastScanned = enrollmentNo; // Store last scanned code
+    function sendToSheet(enrollmentNo, name) {
+      const formData = new FormData();
+      formData.append("EnrollmentNo", enrollmentNo);
+      formData.append("Name", name);
+      formData.append("Status", "Present");
+      formData.append("Coordinator", coordinator);
 
-            if (students[enrollmentNo]) {
-                if (attendance[enrollmentNo] === "Absent") {
-                    attendance[enrollmentNo] = 'Present';
-                    sendToGoogleSheets(enrollmentNo, students[enrollmentNo]);
+      fetch(scriptURL, {
+        method: "POST",
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => console.log("✅ Sent:", data))
+      .catch(err => console.error("❌ Error:", err));
+    }
 
-                    const outputDiv = document.getElementById('output');
-                    const newEntry = document.createElement('p');
-                    newEntry.textContent = `✔ ${students[enrollmentNo]} (${enrollmentNo}) marked Present`;
-                    outputDiv.prepend(newEntry);
-                }
-            }
+    function downloadAttendance() {
+      const updated = Object.keys(attendance).map(no => ({
+        EnrollmentNo: no,
+        Name: students[no],
+        Status: attendance[no]
+      }));
 
-            // Allow next scan after 0.5 second (faster response)
-            setTimeout(() => lastScanned = "", 500);
-        }
-
-        function downloadAttendance() {
-            const updatedData = Object.keys(attendance).map(enrollmentNo => ({
-                EnrollmentNo: enrollmentNo,
-                Name: students[enrollmentNo],
-                Status: attendance[enrollmentNo]
-            }));
-
-            const ws = XLSX.utils.json_to_sheet(updatedData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Attendance");
-            XLSX.writeFile(wb, "Updated_Attendance.xlsx");
-        }
-    </script>
-
+      const ws = XLSX.utils.json_to_sheet(updated);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+      XLSX.writeFile(wb, "Updated_Attendance.xlsx");
+    }
+  </script>
 </body>
 </html>
