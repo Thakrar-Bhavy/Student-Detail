@@ -1,100 +1,245 @@
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
-body {
-    font-family: 'Poppins', sans-serif;
-    background-color: #f9f9f9;
-    margin: 0;
-    padding: 10px;
-    color: #333;
-}
 
-h1 {
-    color: #007bff;
-    font-size: 22px;
-    text-align: center;
-    margin: 10px 0;
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Attendance Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
-input, button {
-    width: 100%;
-    max-width: 500px;
-    margin: 10px auto;
-    display: block;
-    padding: 14px;
-    font-size: 16px;
-    border: none;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    outline: none;
-}
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 10px;
+            color: #333;
+        }
 
-button {
-    background-color: #28a745;
-    color: white;
-    font-weight: 600;
-    transition: background-color 0.3s;
-}
+        h1 {
+            color: #007bff;
+            text-align: center;
+            font-size: 22px;
+            margin-top: 10px;
+        }
 
-button:hover {
-    background-color: #218838;
-}
+        input, button {
+            width: 100%;
+            max-width: 500px;
+            margin: 10px auto;
+            display: block;
+            padding: 14px;
+            font-size: 16px;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
 
-/* Scanner area styling */
-#scanner {
-    width: 100%;
-    max-width: 500px;
-    height: 250px;
-    margin: 20px auto;
-    border: 3px solid #007bff;
-    border-radius: 12px;
-    background-color: #fff;
-    overflow: hidden;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
-}
+        button {
+            background-color: #28a745;
+            color: white;
+            font-weight: bold;
+        }
 
-/* Scanned output */
-#output {
-    max-width: 500px;
-    margin: 20px auto;
-    padding: 15px;
-    background-color: #eafbea;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    font-size: 16px;
-    overflow-y: auto;
-    max-height: 300px;
-    display: flex;
-    flex-direction: column-reverse; /* Show latest scan on top */
-}
+        button:hover {
+            background-color: #218838;
+        }
 
-#output p {
-    background: #fff;
-    margin: 8px 0;
-    padding: 10px;
-    border-left: 5px solid #28a745;
-    border-radius: 8px;
-    text-align: left;
-    font-weight: bold;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
+        #loginSection, #mainApp {
+            max-width: 500px;
+            margin: 0 auto;
+        }
 
-/* Animation for new scan */
-#output p:first-child {
-    background-color: #d4edda;
-    animation: fadeIn 0.4s ease-in-out;
-}
+        #scanner {
+            width: 100%;
+            height: 250px;
+            margin: 20px auto;
+            border: 3px solid #007bff;
+            border-radius: 12px;
+            background-color: #fff;
+            overflow: hidden;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+        #output {
+            max-width: 500px;
+            margin: 20px auto;
+            padding: 15px;
+            background-color: #eafbea;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-size: 16px;
+            overflow-y: auto;
+            max-height: 300px;
+            display: flex;
+            flex-direction: column-reverse;
+        }
 
-/* Responsive tweaks */
-@media (max-width: 480px) {
-    h1 { font-size: 18px; }
-    input, button { font-size: 14px; padding: 12px; }
-    #scanner { height: 200px; }
-    #output { font-size: 15px; }
-}
-</style>
+        #output p {
+            background: #fff;
+            margin: 8px 0;
+            padding: 10px;
+            border-left: 5px solid #28a745;
+            border-radius: 8px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        #output p:first-child {
+            background-color: #d4edda;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<h1>Student Attendance Tracker</h1>
+
+<!-- Login Section -->
+<div id="loginSection">
+    <input type="text" id="coordinatorName" placeholder="Enter Coordinator Name">
+    <input type="password" id="coordinatorPass" placeholder="Enter Password">
+    <button onclick="validateLogin()">Login</button>
+</div>
+
+<!-- Main App -->
+<div id="mainApp" style="display:none;">
+    <input type="file" id="fileInput" accept=".xlsx, .xls"/>
+    <button id="downloadBtn" style="display:none;">Download Attendance</button>
+    <div id="scanner"></div>
+    <div id="output"></div>
+</div>
+
+<script>
+    let students = {};
+    let attendance = {};
+    let lastScanned = "";
+    let coordinator = "";
+    const scriptURL ="https://script.google.com/macros/s/AKfycbz3pYzWO5FgY- 9X7qH8vyprGLC9sSL63j34rMnn7JXLk0TyoSE81IN5Brm_sKxM6LH_w/exec";    // Prevent accidental reload
+    window.onbeforeunload = function () {
+        return "Are you sure you want to leave? Attendance data may be lost.";
+    };
+
+    function validateLogin() {
+        const name = document.getElementById('coordinatorName').value.trim();
+        const pass = document.getElementById('coordinatorPass').value;
+
+        if (name && pass === "admin123") {
+            coordinator = name;
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+        } else {
+            alert("Invalid name or password!");
+        }
+    }
+
+    document.getElementById('fileInput').addEventListener('change', handleFile, false);
+    document.getElementById('downloadBtn').addEventListener('click', downloadAttendance, false);
+
+    function handleFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet);
+
+            json.forEach(student => {
+                students[student.EnrollmentNo] = student.Name;
+                attendance[student.EnrollmentNo] = "Absent";
+            });
+
+            document.getElementById('downloadBtn').style.display = "block";
+            startScanner();
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function startScanner() {
+        if (Quagga.initialized) return;
+
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector('#scanner'),
+                constraints: {
+                    facingMode: "environment"
+                }
+            },
+            decoder: {
+                readers: ["code_128_reader"]
+            }
+        }, function(err) {
+            if (err) {
+                console.error(err);
+                return;
+            }
+            Quagga.initialized = true;
+            Quagga.start();
+            Quagga.onDetected(onDetected);
+        });
+    }
+
+    function onDetected(result) {
+        const code = result.codeResult.code;
+        if (code === lastScanned) return;
+        lastScanned = code;
+
+        if (students[code] && attendance[code] === "Absent") {
+            attendance[code] = "Present";
+            sendToGoogleSheets(code, students[code]);
+
+            const div = document.getElementById('output');
+            const p = document.createElement('p');
+            p.textContent = `✔ ${students[code]} (${code}) marked Present`;
+            div.prepend(p);
+        }
+
+        setTimeout(() => lastScanned = "", 1000);
+    }
+
+    function sendToGoogleSheets(enrollmentNo, name) {
+        const formData = new FormData();
+        formData.append("EnrollmentNo", enrollmentNo);
+        formData.append("Name", name);
+        formData.append("Status", "Present");
+        formData.append("Coordinator", coordinator);
+
+        fetch(scriptURL, {
+            method: "POST",
+            body: formData
+        }).then(res => res.text())
+          .then(res => console.log("✅ Sent to Google Sheets"))
+          .catch(err => console.error("❌ Error sending to Google Sheets:", err));
+    }
+
+    function downloadAttendance() {
+        const data = Object.keys(attendance).map(enr => ({
+            EnrollmentNo: enr,
+            Name: students[enr],
+            Status: attendance[enr]
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+        XLSX.writeFile(wb, "Updated_Attendance.xlsx");
+    }
+</script>
+
+</body>
+</html>
