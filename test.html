@@ -1,312 +1,303 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // --- Configuration ---
-    const GAS_WEB_APP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL'; // <--- PASTE YOUR DEPLOYED URL HERE
-
-    // --- Hardcoded Authorized Users (Replace with a secure method in production) ---
-    const AUTHORIZED_USERS = {
-        "coordinator1": "pass1",
-        "coordinator2": "pass2",
-        "coordinator3": "pass3"
-        // Add more users as needed
-    };
-
-    // --- Hardcoded Student Data (Replace with API lookup or better method in production) ---
-    const STUDENT_DATA = {
-        "ENROLL1001": "Alice Smith",
-        "ENROLL1002": "Bob Johnson",
-        "ENROLL1003": "Charlie Brown",
-        "ENROLL1004": "Diana Prince",
-        // Add all 1000+ students here or load dynamically
-        // For very large lists, consider a more efficient lookup method
-    };
-
-
-    // --- State Variables ---
-    let currentAttendee = null;
-    let html5QrCode = null;
-    let isScanning = false;
-    let lastScanTime = 0; // To prevent rapid duplicate scans
-    const SCAN_DEBOUNCE_MS = 1500; // Minimum ms between scans of the SAME code
-
-    // --- DOM Elements ---
-    const loginSection = document.getElementById('login-section');
-    const scannerSection = document.getElementById('scanner-section');
-    const loginForm = document.getElementById('login-form');
-    const usernameInput = document.getElementById('username');
-    const passwordInput = document.getElementById('password');
-    const loginError = document.getElementById('login-error');
-    const attendeeNameDisplay = document.getElementById('attendee-name-display');
-    const logoutButton = document.getElementById('logout-button');
-    const qrReaderElement = document.getElementById('reader');
-    const scannedList = document.getElementById('scanned-list');
-    const statusMessage = document.getElementById('status-message');
-    const backendStatus = document.getElementById('backend-status');
-    const loadingIndicator = document.getElementById('loading-indicator');
-
-
-    // --- Functions ---
-
-    // Show/Hide Sections
-    function showSection(sectionId) {
-        loginSection.classList.remove('active');
-        scannerSection.classList.remove('active');
-        document.getElementById(sectionId)?.classList.add('active');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Attendance Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+      margin: 0;
+      color: #333;
     }
 
-    // Show Loading Indicator
-    function showLoading(show = true) {
-        loadingIndicator.classList.toggle('active', show);
+    h1 {
+      text-align: center;
+      color: #007bff;
     }
 
-    // Update Backend Status Message
-    function updateBackendStatus(message, type = 'info') { // type = 'info', 'success', 'error', 'sending'
-        backendStatus.textContent = message;
-        backendStatus.className = `status-indicator ${type}`; // Add class for styling
-        // Optionally clear after a delay
-        if (type === 'success' || type === 'error') {
-            setTimeout(() => {
-                if (backendStatus.textContent === message) { // Clear only if message hasn't changed
-                     backendStatus.textContent = '';
-                     backendStatus.className = 'status-indicator';
-                }
-            }, 4000); // Clear after 4 seconds
-        }
+    .hidden {
+      display: none;
     }
 
-    // Handle Login
-    function handleLogin(event) {
-        event.preventDefault();
-        loginError.textContent = '';
-        const username = usernameInput.value.trim();
-        const password = passwordInput.value;
-
-        if (AUTHORIZED_USERS[username] && AUTHORIZED_USERS[username] === password) {
-            currentAttendee = username;
-            attendeeNameDisplay.textContent = currentAttendee;
-            showSection('scanner-section');
-            startScanner();
-            // Add safety listener *after* successful login
-            window.addEventListener('beforeunload', beforeUnloadHandler);
-        } else {
-            loginError.textContent = 'Invalid username or password.';
-        }
-        // Clear password field after attempt
-        passwordInput.value = '';
+    input, button {
+      display: block;
+      width: 90%;
+      max-width: 400px;
+      margin: 10px auto;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
     }
 
-    // Handle Logout
-    function handleLogout() {
-        stopScanner();
-        currentAttendee = null;
-        usernameInput.value = '';
-        passwordInput.value = '';
-        scannedList.innerHTML = ''; // Clear scanned list on logout
-        statusMessage.textContent = 'Logged out.';
-        backendStatus.textContent = '';
-         // Remove safety listener on logout
-        window.removeEventListener('beforeunload', beforeUnloadHandler);
-        showSection('login-section');
+    button {
+      background: #28a745;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
     }
 
-    // Look up student name (simple version)
-    function getStudentName(enrollmentNo) {
-        return STUDENT_DATA[enrollmentNo] || "Unknown Student";
+    button:hover {
+      background: #218838;
     }
 
-    // Display Scanned Item Locally
-    function displayScanResult(enrollmentNo, studentName, timestamp) {
-        const listItem = document.createElement('li');
-        const scanTime = new Date(timestamp).toLocaleTimeString();
-
-        listItem.innerHTML = `
-            <span class="scan-details"><strong>${enrollmentNo}</strong> - ${studentName}</span>
-            <span class="scan-time">${scanTime}</span>
-        `;
-        // Add to the top of the list
-        scannedList.prepend(listItem);
-
-         // Optional: Limit the list size
-        const MAX_LIST_ITEMS = 20;
-        while (scannedList.children.length > MAX_LIST_ITEMS) {
-            scannedList.removeChild(scannedList.lastChild);
-        }
+    #scanner {
+      width: 100%;
+      max-width: 600px;
+      height: 300px;
+      border: 4px solid #007bff;
+      border-radius: 12px;
+      margin: 20px auto;
+      background: #fff;
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
     }
 
-
-    // Send Data to Google Apps Script
-    async function sendDataToBackend(enrollmentNo, studentName, attendeeName, timestamp) {
-        showLoading(true);
-        updateBackendStatus('Sending...', 'sending');
-
-        const payload = {
-            enrollmentNo,
-            studentName,
-            attendeeName,
-            timestamp
-        };
-
-        try {
-            const response = await fetch(GAS_WEB_APP_URL, {
-                method: 'POST',
-                mode: 'cors', // Necessary for cross-origin requests
-                // redirect: "follow", // GAS sometimes redirects, follow is safer
-                cache: 'no-cache',
-                 // Important: Send as text for simple GAS doPost parsing or handle JSON correctly
-                // headers: { 'Content-Type': 'text/plain', }, // If parsing e.postData.contents directly
-                // body: JSON.stringify(payload)
-
-                // Sending as JSON (Requires GAS to parse JSON)
-                headers: { 'Content-Type': 'application/json', },
-                body: JSON.stringify(payload)
-            });
-
-            const resultText = await response.text(); // Read response as text
-
-            if (resultText.trim().toLowerCase() === 'success') {
-                 console.log('Data sent successfully:', payload);
-                 updateBackendStatus('Success!', 'success');
-            } else {
-                 console.error('Backend Error:', resultText);
-                 updateBackendStatus(`Error: ${resultText}`, 'error');
-                 // Maybe add retry logic here in a real app
-            }
-
-        } catch (error) {
-            console.error('Network or fetch Error:', error);
-            updateBackendStatus(`Network Error: ${error.message}`, 'error');
-            // Implement offline queueing logic here if needed
-        } finally {
-            showLoading(false);
-        }
+    #output {
+      margin: 20px auto;
+      max-width: 600px;
+      max-height: 300px;
+      overflow-y: auto;
+      background: #d4edda;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 16px;
     }
 
-
-    // --- QR Code Scanner Logic ---
-
-    // Success callback when a QR code is scanned
-    function onScanSuccess(decodedText, decodedResult) {
-        // Handle scan results here.
-        console.log(`Code matched = ${decodedText}`, decodedResult);
-
-        const now = Date.now();
-        // Basic debounce specifically for *rapid* rescans of the *same* code
-        if (now - lastScanTime < SCAN_DEBOUNCE_MS) {
-             console.log("Debounced rapid scan.");
-             return; // Too soon since the last scan
-        }
-        lastScanTime = now;
-
-        statusMessage.textContent = `Scanned: ${decodedText}`;
-
-        const enrollmentNo = decodedText; // Assume QR code is the enrollment number
-        const studentName = getStudentName(enrollmentNo);
-        const timestamp = new Date().toISOString(); // Use ISO format for consistency
-
-        // 1. Display immediately on screen
-        displayScanResult(enrollmentNo, studentName, timestamp);
-
-        // 2. Send data to backend (asynchronously)
-        if (currentAttendee && GAS_WEB_APP_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL') {
-             sendDataToBackend(enrollmentNo, studentName, currentAttendee, timestamp);
-        } else if (GAS_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL') {
-            updateBackendStatus('Error: Backend URL not configured!', 'error');
-        }
-
-        // Optional: Add a brief vibration on successful scan
-        if (navigator.vibrate) {
-            navigator.vibrate(100); // Vibrate for 100ms
-        }
+    #output p {
+      margin: 5px 0;
+      background: #fff;
+      padding: 10px;
+      border-radius: 4px;
+      border-left: 5px solid #28a745;
+      text-align: left;
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
     }
 
-    // Optional: Error callback for the scanner
-    function onScanFailure(error) {
-        // Handle scan errors, like camera permissions or no QR code found
-        // This often fires continuously when no code is in view, so keep logging minimal.
-        // console.warn(`Code scan error = ${error}`);
-        // statusMessage.textContent = `Scanning... (Point camera at barcode)`;
+    #manualForm {
+      margin-top: 20px;
+      text-align: center;
     }
 
-    // Start the scanner
-    function startScanner() {
-        if (isScanning) return; // Already scanning
+    @media (max-width: 600px) {
+      #scanner {
+        height: 220px;
+      }
 
-        // Create instance only if it doesn't exist
-        if (!html5QrCode) {
-            html5QrCode = new Html5Qrcode("reader");
-        }
+      input, button {
+        width: 95%;
+      }
+    }
+  </style>
+</head>
+<body>
 
+  <h1>Student Attendance Tracker</h1>
 
-        statusMessage.textContent = "Requesting camera access...";
+  <div id="login">
+    <input type="text" id="coordinatorName" placeholder="Enter Coordinator Name" />
+    <input type="password" id="coordinatorPassword" placeholder="Enter Password" />
+    <button onclick="login()">Login</button>
+  </div>
 
-        // Configuration for the scanner
-        const config = {
-            fps: 10, // Frames per second to scan
-            qrbox: { width: 250, height: 150 }, // Size of the scanning box (optional)
-            // Use facingMode: environment for back camera
-            facingMode: "environment",
-            // aspectRatio: 1.0 // You might need to adjust this based on device aspect ratio
-        };
+  <div id="mainApp" class="hidden">
+    <input type="file" id="fileInput" accept=".xlsx,.xls" />
+    <button id="downloadBtn" onclick="downloadAttendance()" style="display:none;">Download Attendance</button>
 
+    <div id="scanner"></div>
+    <div id="output"></div>
 
-        // Start scanning
-        html5QrCode.start(
-            { facingMode: "environment" }, // Or specify deviceId if known
-            config,
-            onScanSuccess,
-            onScanFailure
-        ).then(() => {
-            console.log("Scanner started successfully.");
-            statusMessage.textContent = "Scanning... Point camera at barcode.";
-            isScanning = true;
-        }).catch(err => {
-            console.error("Failed to start scanner:", err);
-            statusMessage.textContent = `Error starting scanner: ${err}`;
-             qrReaderElement.innerHTML = `<p style="color: red; padding: 10px;">Could not start camera. Please ensure permissions are granted and try refreshing.</p>`;
+    <button onclick="toggleManualForm()">Manual Attendance</button>
+
+    <div id="manualForm" class="hidden">
+      <input type="text" id="manualEnroll" placeholder="Enter Enrollment No" />
+      <button onclick="submitManual()">Submit</button>
+      <div id="manualResult"></div>
+    </div>
+  </div>
+
+  <script>
+    let students = {};
+    let attendance = {};
+    let lastScanned = "";
+    let coordinator = "";
+    const scriptURL = "https://script.google.com/macros/s/AKfycbwMbuaGWuGcYoZQgGuh22aqXHjdcFrOV8CgO8iLOBY6/dev";
+
+    // Try resending any pending data when online
+    window.addEventListener("load", () => {
+      resendPendingData();
+    });
+
+    // Re-send pending attendance data
+    function resendPendingData() {
+      const pending = JSON.parse(localStorage.getItem("pendingAttendance") || "[]");
+      if (pending.length === 0) return;
+
+      pending.forEach(data => {
+        sendToGoogleSheets(data.enr, data.name, true); // true: skip saving again
+      });
+
+      localStorage.removeItem("pendingAttendance");
+    }
+
+    window.onbeforeunload = () => "Are you sure you want to leave? Unsaved data may be lost.";
+
+    function login() {
+      const name = document.getElementById('coordinatorName').value.trim();
+      const pass = document.getElementById('coordinatorPassword').value.trim();
+      if (name && pass === "admin") {
+        coordinator = name;
+        document.getElementById('login').classList.add('hidden');
+        document.getElementById('mainApp').classList.remove('hidden');
+      } else {
+        alert("Invalid credentials. Password is 'admin'.");
+      }
+    }
+
+    document.getElementById('fileInput').addEventListener('change', handleFile, false);
+
+    function handleFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+        jsonData.forEach(student => {
+          students[student.EnrollmentNo] = student.Name;
+          attendance[student.EnrollmentNo] = "Absent";
         });
+
+        document.getElementById('downloadBtn').style.display = "block";
+        startScanner();
+      };
+      reader.readAsArrayBuffer(file);
     }
 
-    // Stop the scanner
-    function stopScanner() {
-        if (html5QrCode && isScanning) {
-            html5QrCode.stop().then(() => {
-                console.log("Scanner stopped successfully.");
-                isScanning = false;
-                statusMessage.textContent = "Scanner stopped.";
-                // Optionally clear the reader element content
-                // qrReaderElement.innerHTML = '';
-            }).catch(err => {
-                console.error("Failed to stop scanner:", err);
-                statusMessage.textContent = "Could not stop scanner properly.";
-            });
+    function startScanner() {
+      if (Quagga.initialized) return;
+
+      Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: document.querySelector('#scanner'),
+          constraints: {
+            facingMode: "environment"
+          }
+        },
+        decoder: {
+          readers: ["code_128_reader"]
+        }
+      }, function (err) {
+        if (err) {
+          console.error(err);
+          return;
+        }
+        Quagga.initialized = true;
+        Quagga.start();
+        Quagga.onDetected(onDetected);
+      });
+    }
+
+    function onDetected(result) {
+      const code = result.codeResult.code;
+      if (code === lastScanned) return;
+      lastScanned = code;
+
+      if (students[code] && attendance[code] === "Absent") {
+        attendance[code] = "Present";
+        sendToGoogleSheets(code, students[code]);
+        showOutput(`${students[code]} (${code}) marked Present`);
+      }
+
+      setTimeout(() => lastScanned = "", 700);
+    }
+
+    function sendToGoogleSheets(enr, name, isResend = false) {
+      const formData = new FormData();
+      formData.append("EnrollmentNo", enr);
+      formData.append("Name", name);
+      formData.append("Status", "Present");
+      formData.append("Coordinator", coordinator);
+
+      fetch(scriptURL, {
+        method: "POST",
+        body: formData
+      })
+      .then(res => res.text())
+      .then(data => {
+        if (!isResend) console.log("✔ Sent to Google Sheets");
+      })
+      .catch(err => {
+        console.warn("❌ Failed to send, storing offline", err);
+        if (!isResend) {
+          const pending = JSON.parse(localStorage.getItem("pendingAttendance") || "[]");
+          pending.push({ enr, name });
+          localStorage.setItem("pendingAttendance", JSON.stringify(pending));
+        }
+      });
+    }
+
+    function showOutput(text) {
+      const out = document.getElementById('output');
+      const p = document.createElement('p');
+      p.textContent = "✔ " + text;
+      out.prepend(p);
+    }
+
+    function downloadAttendance() {
+      const data = Object.keys(attendance).map(enr => ({
+        EnrollmentNo: enr,
+        Name: students[enr],
+        Status: attendance[enr]
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+      XLSX.writeFile(wb, "Updated_Attendance.xlsx");
+    }
+
+    function toggleManualForm() {
+      const form = document.getElementById("manualForm");
+      form.classList.toggle("hidden");
+      document.getElementById("manualResult").textContent = "";
+      document.getElementById("manualEnroll").value = "";
+    }
+
+    function submitManual() {
+      const enr = document.getElementById("manualEnroll").value.trim();
+      const result = document.getElementById("manualResult");
+
+      if (students[enr]) {
+        if (attendance[enr] === "Absent") {
+          attendance[enr] = "Present";
+          sendToGoogleSheets(enr, students[enr]);
+          showOutput(`${students[enr]} (${enr}) marked Present (Manual)`);
+          result.textContent = `✔ ${students[enr]} marked Present`;
+          result.style.color = "green";
         } else {
-            isScanning = false; // Ensure state is correct even if scanner wasn't active/instance exists
+          result.textContent = "⚠ Already marked Present";
+          result.style.color = "orange";
         }
+      } else {
+        result.textContent = "❌ Enrollment not found";
+        result.style.color = "red";
+      }
+
+      document.getElementById("manualEnroll").value = "";
     }
-
-
-     // --- Prevent Accidental Data Loss ---
-     function beforeUnloadHandler(event) {
-        // Show confirmation message only if logged in
-        if (currentAttendee) {
-             event.preventDefault(); // Standard practice
-             event.returnValue = 'Are you sure you want to leave? Unsaved scans might be lost.'; // For older browsers
-             return 'Are you sure you want to leave? Unsaved scans might be lost.'; // For modern browsers
-        }
-        // If not logged in, allow navigation without prompt
-     }
-
-
-    // --- Event Listeners ---
-    loginForm.addEventListener('submit', handleLogin);
-    logoutButton.addEventListener('click', handleLogout);
-
-    // --- Initial Setup ---
-    if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL') {
-        console.error("CRITICAL: Google Apps Script Web App URL is not set in script.js!");
-        // Display a warning to the user? Maybe in the login error area.
-        loginError.textContent = "App configuration error: Backend URL missing.";
-    }
-
-    showSection('login-section'); // Start on the login page
-
-}); // End DOMContentLoaded
+  </script>
+</body>
+</html>
