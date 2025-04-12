@@ -152,12 +152,12 @@
     function login() {
       const name = document.getElementById('coordinatorName').value.trim();
       const pass = document.getElementById('coordinatorPassword').value.trim();
-      if (name && pass === "admin") {
+      if (name && pass === "mahakal") {
         coordinator = name;
         document.getElementById('login').classList.add('hidden');
         document.getElementById('mainApp').classList.remove('hidden');
       } else {
-        alert("Invalid credentials. Password is 'admin'.");
+        alert("Invalid credentials. Password is 'mahakal'.");
       }
     }
 
