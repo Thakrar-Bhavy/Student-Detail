@@ -1,245 +1,336 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Student Attendance Tracker</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Attendance Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+      margin: 0;
+      color: #333;
+    }
 
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 10px;
-            color: #333;
-        }
+    h1 {
+      text-align: center;
+      color: #007bff;
+    }
 
-        h1 {
-            color: #007bff;
-            text-align: center;
-            font-size: 22px;
-            margin-top: 10px;
-        }
+    .hidden {
+      display: none;
+    }
 
-        input, button {
-            width: 100%;
-            max-width: 500px;
-            margin: 10px auto;
-            display: block;
-            padding: 14px;
-            font-size: 16px;
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
+    input, button {
+      display: block;
+      width: 90%;
+      max-width: 400px;
+      margin: 10px auto;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
 
-        button {
-            background-color: #28a745;
-            color: white;
-            font-weight: bold;
-        }
+    button {
+      background: #28a745;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
 
-        button:hover {
-            background-color: #218838;
-        }
+    button:hover {
+      background: #218838;
+    }
 
-        #loginSection, #mainApp {
-            max-width: 500px;
-            margin: 0 auto;
-        }
+    #scanner {
+      width: 100%;
+      max-width: 600px;
+      height: 300px;
+      border: 4px solid #007bff;
+      border-radius: 12px;
+      margin: 20px auto;
+      background: #fff;
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
 
-        #scanner {
-            width: 100%;
-            height: 250px;
-            margin: 20px auto;
-            border: 3px solid #007bff;
-            border-radius: 12px;
-            background-color: #fff;
-            overflow: hidden;
-            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
-        }
+    #output {
+      margin: 20px auto;
+      max-width: 600px;
+      max-height: 300px;
+      overflow-y: auto;
+      background: #d4edda;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 16px;
+    }
 
-        #output {
-            max-width: 500px;
-            margin: 20px auto;
-            padding: 15px;
-            background-color: #eafbea;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            font-size: 16px;
-            overflow-y: auto;
-            max-height: 300px;
-            display: flex;
-            flex-direction: column-reverse;
-        }
+    #output p {
+      margin: 5px 0;
+      background: #fff;
+      padding: 10px;
+      border-radius: 4px;
+      border-left: 5px solid #28a745;
+      text-align: left;
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+    }
 
-        #output p {
-            background: #fff;
-            margin: 8px 0;
-            padding: 10px;
-            border-left: 5px solid #28a745;
-            border-radius: 8px;
-            text-align: left;
-            font-weight: bold;
-        }
+    #manualForm {
+      margin-top: 20px;
+      text-align: center;
+    }
 
-        #output p:first-child {
-            background-color: #d4edda;
-            animation: fadeIn 0.4s ease-in-out;
-        }
+    @media (max-width: 600px) {
+      #scanner {
+        height: 220px;
+      }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+      input, button {
+        width: 95%;
+      }
+    }
+  </style>
 </head>
 <body>
 
-<h1>Student Attendance Tracker</h1>
+  <h1>Student Attendance Tracker</h1>
 
-<!-- Login Section -->
-<div id="loginSection">
-    <input type="text" id="coordinatorName" placeholder="Enter Coordinator Name">
-    <input type="password" id="coordinatorPass" placeholder="Enter Password">
-    <button onclick="validateLogin()">Login</button>
-</div>
+  <div id="login">
+    <input type="text" id="coordinatorName" placeholder="Enter Coordinator Name" />
+    <input type="password" id="coordinatorPassword" placeholder="Enter Password" />
+    <button onclick="login()">Login</button>
+  </div>
 
-<!-- Main App -->
-<div id="mainApp" style="display:none;">
-    <input type="file" id="fileInput" accept=".xlsx, .xls"/>
-    <button id="downloadBtn" style="display:none;">Download Attendance</button>
+  <div id="mainApp" class="hidden">
+    <input type="file" id="fileInput" accept=".xlsx,.xls" />
+    <button id="downloadBtn" onclick="downloadAttendance()" style="display:none;">Download Attendance</button>
+
     <div id="scanner"></div>
     <div id="output"></div>
-</div>
 
-<script>
+    <button onclick="toggleManualForm()">Manual Attendance</button>
+
+    <div id="manualForm" class="hidden">
+      <input type="text" id="manualEnroll" placeholder="Enter Enrollment No" />
+      <button onclick="submitManual()">Submit</button>
+      <div id="manualResult"></div>
+    </div>
+  </div>
+
+  <script>
     let students = {};
     let attendance = {};
     let lastScanned = "";
     let coordinator = "";
-    const scriptURL ="https://script.google.com/macros/s/AKfycbxkf8LRWtlgeYXXyW2C1iawaZsl1mWrvMAi4nVsMLVtIyALcHR6jXz7PaNdH0mxO89KGQ/exec";    // Prevent accidental reload
-    window.onbeforeunload = function () {
-        return "Are you sure you want to leave? Attendance data may be lost.";
-    };
+    const scriptURL = "https://script.google.com/macros/s/AKfycbwQalHLQ8BN3EnXbZrYaF3h9lh6k1Yu-MAOm4YFFpQ3lTOTa71L6KXzOtiHUT6F8sgUzw/exec";
 
-    function validateLogin() {
-        const name = document.getElementById('coordinatorName').value.trim();
-        const pass = document.getElementById('coordinatorPass').value;
+    window.addEventListener("load", () => {
+      resendPendingData();
+    });
 
-        if (name && pass === "admin123") {
-            coordinator = name;
-            document.getElementById('loginSection').style.display = 'none';
-            document.getElementById('mainApp').style.display = 'block';
-        } else {
-            alert("Invalid name or password!");
-        }
+    // Retry every 10 seconds if online
+    setInterval(() => {
+      if (navigator.onLine) {
+        resendPendingData();
+      }
+    }, 10000);
+
+    // Retry on back online
+    window.addEventListener("online", () => {
+      console.log("🔌 Back online. Retrying pending data...");
+      resendPendingData();
+    });
+
+    window.onbeforeunload = () => "Are you sure you want to leave? Unsaved data may be lost.";
+
+    function login() {
+      const name = document.getElementById('coordinatorName').value.trim();
+      const pass = document.getElementById('coordinatorPassword').value.trim();
+      if (name && pass === "admin") {
+        coordinator = name;
+        document.getElementById('login').classList.add('hidden');
+        document.getElementById('mainApp').classList.remove('hidden');
+      } else {
+        alert("Invalid credentials. Password is 'admin'.");
+      }
     }
 
     document.getElementById('fileInput').addEventListener('change', handleFile, false);
-    document.getElementById('downloadBtn').addEventListener('click', downloadAttendance, false);
 
-    function handleFile(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+    function handleFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            const json = XLSX.utils.sheet_to_json(sheet);
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(sheet);
 
-            json.forEach(student => {
-                students[student.EnrollmentNo] = student.Name;
-                attendance[student.EnrollmentNo] = "Absent";
-            });
+        jsonData.forEach(student => {
+          students[student.EnrollmentNo] = student.Name;
+          attendance[student.EnrollmentNo] = "Absent";
+        });
 
-            document.getElementById('downloadBtn').style.display = "block";
-            startScanner();
-        };
-        reader.readAsArrayBuffer(file);
+        document.getElementById('downloadBtn').style.display = "block";
+        startScanner();
+      };
+      reader.readAsArrayBuffer(file);
     }
 
     function startScanner() {
-        if (Quagga.initialized) return;
+      if (Quagga.initialized) return;
 
-        Quagga.init({
-            inputStream: {
-                name: "Live",
-                type: "LiveStream",
-                target: document.querySelector('#scanner'),
-                constraints: {
-                    facingMode: "environment"
-                }
-            },
-            decoder: {
-                readers: ["code_128_reader"]
-            }
-        }, function(err) {
-            if (err) {
-                console.error(err);
-                return;
-            }
-            Quagga.initialized = true;
-            Quagga.start();
-            Quagga.onDetected(onDetected);
-        });
+      Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: document.querySelector('#scanner'),
+          constraints: {
+            facingMode: "environment"
+          }
+        },
+        decoder: {
+          readers: ["code_128_reader"]
+        }
+      }, function (err) {
+        if (err) {
+          console.error(err);
+          return;
+        }
+        Quagga.initialized = true;
+        Quagga.start();
+        Quagga.onDetected(onDetected);
+      });
     }
 
     function onDetected(result) {
-        const code = result.codeResult.code;
-        if (code === lastScanned) return;
-        lastScanned = code;
+      const code = result.codeResult.code;
+      if (code === lastScanned) return;
+      lastScanned = code;
 
-        if (students[code] && attendance[code] === "Absent") {
-            attendance[code] = "Present";
-            sendToGoogleSheets(code, students[code]);
+      if (students[code] && attendance[code] === "Absent") {
+        attendance[code] = "Present";
+        sendToGoogleSheets(code, students[code]);
+        showOutput(`${students[code]} (${code}) marked Present`);
+      }
 
-            const div = document.getElementById('output');
-            const p = document.createElement('p');
-            p.textContent = `✔ ${students[code]} (${code}) marked Present`;
-            div.prepend(p);
-        }
-
-        setTimeout(() => lastScanned = "", 1000);
+      setTimeout(() => lastScanned = "", 700);
     }
 
-    function sendToGoogleSheets(enrollmentNo, name) {
-        const formData = new FormData();
-        formData.append("EnrollmentNo", enrollmentNo);
-        formData.append("Name", name);
-        formData.append("Status", "Present");
-        formData.append("Coordinator", coordinator);
+    function sendToGoogleSheets(enr, name, isResend = false) {
+      const formData = new FormData();
+      formData.append("EnrollmentNo", enr);
+      formData.append("Name", name);
+      formData.append("Status", "Present");
+      formData.append("Coordinator", coordinator);
 
+      fetch(scriptURL, {
+        method: "POST",
+        body: formData
+      })
+      .then(res => res.text())
+      .then(data => {
+        if (!isResend) console.log("✔ Sent to Google Sheets");
+      })
+      .catch(err => {
+        console.warn("❌ Failed to send, storing offline", err);
+        if (!isResend) {
+          savePendingData(enr, name);
+        }
+      });
+    }
+
+    function savePendingData(enr, name) {
+      const pending = JSON.parse(localStorage.getItem("pendingAttendance") || "[]");
+      pending.push({ enr, name });
+      localStorage.setItem("pendingAttendance", JSON.stringify(pending));
+    }
+
+    function resendPendingData() {
+      const pending = JSON.parse(localStorage.getItem("pendingAttendance") || "[]");
+      if (pending.length === 0) return;
+
+      const stillPending = [];
+
+      pending.forEach(data => {
         fetch(scriptURL, {
-            method: "POST",
-            body: formData
-        }).then(res => res.text())
-          .then(res => console.log("✅ Sent to Google Sheets"))
-          .catch(err => console.error("❌ Error sending to Google Sheets:", err));
+          method: "POST",
+          body: new URLSearchParams({
+            EnrollmentNo: data.enr,
+            Name: data.name,
+            Status: "Present",
+            Coordinator: coordinator
+          })
+        })
+        .then(res => res.text())
+        .then(() => {
+          console.log("✔ Resent:", data.enr);
+        })
+        .catch(() => {
+          stillPending.push(data);
+        })
+        .finally(() => {
+          localStorage.setItem("pendingAttendance", JSON.stringify(stillPending));
+        });
+      });
+    }
+
+    function showOutput(text) {
+      const out = document.getElementById('output');
+      const p = document.createElement('p');
+      p.textContent = "✔ " + text;
+      out.prepend(p);
     }
 
     function downloadAttendance() {
-        const data = Object.keys(attendance).map(enr => ({
-            EnrollmentNo: enr,
-            Name: students[enr],
-            Status: attendance[enr]
-        }));
-
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Attendance");
-        XLSX.writeFile(wb, "Updated_Attendance.xlsx");
+      const data = Object.keys(attendance).map(enr => ({
+        EnrollmentNo: enr,
+        Name: students[enr],
+        Status: attendance[enr]
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+      XLSX.writeFile(wb, "Updated_Attendance.xlsx");
     }
-</script>
 
+    function toggleManualForm() {
+      const form = document.getElementById("manualForm");
+      form.classList.toggle("hidden");
+      document.getElementById("manualResult").textContent = "";
+      document.getElementById("manualEnroll").value = "";
+    }
+
+    function submitManual() {
+      const enr = document.getElementById("manualEnroll").value.trim();
+      const result = document.getElementById("manualResult");
+
+      if (students[enr]) {
+        if (attendance[enr] === "Absent") {
+          attendance[enr] = "Present";
+          sendToGoogleSheets(enr, students[enr]);
+          showOutput(`${students[enr]} (${enr}) marked Present (Manual)`);
+          result.textContent = `✔ ${students[enr]} marked Present`;
+          result.style.color = "green";
+        } else {
+          result.textContent = "⚠ Already marked Present";
+          result.style.color = "orange";
+        }
+      } else {
+        result.textContent = "❌ Enrollment not found";
+        result.style.color = "red";
+      }
+
+      document.getElementById("manualEnroll").value = "";
+    }
+  </script>
 </body>
 </html>
