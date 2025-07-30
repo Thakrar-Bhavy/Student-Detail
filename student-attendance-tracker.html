@@ -101,28 +101,39 @@
     </div>
   </div>
 
-  <!-- ✅ Success Ding Sound -->
   <audio id="successSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3" preload="auto"></audio>
 
   <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbwMVXdAwq6mvL3_rnQwlBn3jppg8R1PMt8fCT7GmiA5Zs0O3xtAsD2iecbl5yxUztJmGg/exec";
-    let students = {};
-    let attendance = {};
-    let lastScanned = "";
-    let coordinator = "";
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyblxZHmuV0FxSu2XK3JvHbtNyuPRQRnbBsoiu-5uxYqhWW0yYqcVXQXf9Tc5xRtlA5SA/exec";
+    let students = {}, attendance = {}, lastScanned = "", coordinator = "";
+    let pendingQueue = [];
 
-    window.addEventListener("load", () => resendPendingData());
-    setInterval(() => { if (navigator.onLine) resendPendingData(); }, 10000);
-    window.addEventListener("online", () => resendPendingData());
-    window.onbeforeunload = () => "Are you sure you want to leave? Unsaved data may be lost.";
+    window.addEventListener("load", () => {
+      const saved = localStorage.getItem("pendingAttendance");
+      if (saved) pendingQueue = JSON.parse(saved);
+    });
+
+    setInterval(() => {
+      if (navigator.onLine && pendingQueue.length > 0) {
+        const data = pendingQueue[0];
+        fetch(scriptURL, {
+          method: "POST",
+          body: buildFormData(data),
+        })
+        .then(() => {
+          console.log("✔ Resent from queue:", data.EnrollmentNo);
+          pendingQueue.shift();
+          localStorage.setItem("pendingAttendance", JSON.stringify(pendingQueue));
+        })
+        .catch(err => console.warn("❌ Retry failed:", err));
+      }
+    }, 5000);
 
     function login() {
       const name = document.getElementById('coordinatorSelect').value;
       const pass = document.getElementById('coordinatorPassword').value.trim();
       if (!name) return alert("Please select a coordinator");
-
-      const expectedPassword = name + "@123";
-      if (pass === expectedPassword) {
+      if (pass === name + "@123") {
         coordinator = name;
         document.getElementById('login').classList.add('hidden');
         document.getElementById('mainApp').classList.remove('hidden');
@@ -140,8 +151,7 @@
         const workbook = XLSX.read(data, { type: 'array' });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json(sheet);
-        students = {};
-        attendance = {};
+        students = {}; attendance = {};
         jsonData.forEach(row => {
           const enr = String(row['Enrollment No'] || row['EnrollmentNo'] || row['Enrollment'] || row[1]).trim();
           const name = row['Name'] || row[2];
@@ -167,10 +177,7 @@
         },
         decoder: { readers: ["code_128_reader"] }
       }, function(err) {
-        if (err) {
-          console.error(err);
-          return;
-        }
+        if (err) return console.error(err);
         Quagga.initialized = true;
         Quagga.start();
         Quagga.onDetected(onDetected);
@@ -189,51 +196,27 @@
       setTimeout(() => lastScanned = "", 700);
     }
 
-    function sendToGoogleSheets(enr, name, method = "Scanner", isResend = false) {
-      const formData = new FormData();
-      formData.append("EnrollmentNo", enr);
-      formData.append("Name", name);
-      formData.append("Status", "Present");
-      formData.append("Coordinator", coordinator);
-      formData.append("Method", method);
-      fetch(scriptURL, {
-        method: "POST",
-        body: formData
-      })
+    function sendToGoogleSheets(enr, name, method = "Scanner") {
+      const data = { EnrollmentNo: enr, Name: name, Status: "Present", Coordinator: coordinator, Method: method };
+      if (!navigator.onLine) {
+        enqueuePending(data);
+        return;
+      }
+      fetch(scriptURL, { method: "POST", body: buildFormData(data) })
       .then(res => res.text())
-      .then(() => { if (!isResend) console.log("✔ Sent to Google Sheets"); })
-      .catch(err => {
-        if (!isResend) savePendingData(enr, name, method);
-      });
+      .catch(() => enqueuePending(data));
     }
 
-    function savePendingData(enr, name, method) {
-      const pending = JSON.parse(localStorage.getItem("pendingAttendance") || "[]");
-      pending.push({ enr, name, method });
-      localStorage.setItem("pendingAttendance", JSON.stringify(pending));
+    function enqueuePending(data) {
+      pendingQueue.push(data);
+      localStorage.setItem("pendingAttendance", JSON.stringify(pendingQueue));
+      console.warn("⚠ Stored offline (queued):", data.EnrollmentNo);
     }
 
-    function resendPendingData() {
-      const pending = JSON.parse(localStorage.getItem("pendingAttendance") || "[]");
-      if (pending.length === 0) return;
-      const stillPending = [];
-      pending.forEach(data => {
-        const formData = new FormData();
-        formData.append("EnrollmentNo", data.enr);
-        formData.append("Name", data.name);
-        formData.append("Status", "Present");
-        formData.append("Coordinator", coordinator);
-        formData.append("Method", data.method || "Scanner");
-        fetch(scriptURL, {
-          method: "POST",
-          body: formData
-        })
-        .then(() => console.log("✔ Resent:", data.enr))
-        .catch(() => stillPending.push(data))
-        .finally(() => {
-          localStorage.setItem("pendingAttendance", JSON.stringify(stillPending));
-        });
-      });
+    function buildFormData(obj) {
+      const fd = new FormData();
+      Object.entries(obj).forEach(([k, v]) => fd.append(k, v));
+      return fd;
     }
 
     function showOutput(text) {
@@ -242,8 +225,7 @@
       const p = document.createElement('p');
       p.textContent = "✔ " + text;
       out.appendChild(p);
-      const sound = document.getElementById("successSound");
-      if (sound) sound.play();
+      document.getElementById("successSound").play();
     }
 
     function downloadAttendance() {
