@@ -1,238 +1,275 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login | Attendance Tracker</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Coordinator Panel | Attendance Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
   <style>
-    :root {
-      --primary-color: #4361ee;
-      --success-color: #4cc9f0;
-      --error-color: #f72585;
-      --light-gray: #f8f9fa;
-      --dark-gray: #6c757d;
-      --border-radius: 8px;
-      --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-      --transition: all 0.3s ease;
-    }
-    
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
     body {
       font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
+      padding: 20px;
+      background: #f8f9fa;
       color: #333;
-      line-height: 1.6;
     }
-    
-    .login-container {
+    h2 { text-align: center; color: #007bff; }
+    input, button, select {
+      display: block;
+      width: 90%;
+      max-width: 400px;
+      margin: 10px auto;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      background: #28a745;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover { background: #218838; }
+    #scanner {
       width: 100%;
-      max-width: 420px;
-      padding: 0 20px;
-    }
-    
-    .login-box {
-      background: white;
-      padding: 40px;
-      border-radius: var(--border-radius);
-      box-shadow: var(--box-shadow);
-      text-align: center;
-      position: relative;
+      max-width: 600px;
+      height: 280px;
+      border: 3px solid #007bff;
+      margin: 20px auto;
+      border-radius: 8px;
+      background: #fff;
       overflow: hidden;
     }
-    
-    .login-box::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 5px;
-      background: linear-gradient(90deg, var(--primary-color), var(--success-color));
-    }
-    
-    h2 {
-      margin-bottom: 30px;
-      color: var(--primary-color);
-      font-weight: 600;
-      font-size: 28px;
-    }
-    
-    .form-group {
-      margin-bottom: 20px;
-      text-align: left;
-    }
-    
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 500;
-      color: var(--dark-gray);
-      font-size: 14px;
-    }
-    
-    select, input {
-      width: 100%;
-      padding: 14px 16px;
-      font-size: 15px;
-      border-radius: var(--border-radius);
-      border: 1px solid #e0e0e0;
-      background-color: var(--light-gray);
-      transition: var(--transition);
-      appearance: none;
-    }
-    
-    select:focus, input:focus {
-      outline: none;
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
-      background-color: white;
-    }
-    
-    select {
-      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-      background-size: 16px;
-    }
-    
-    button {
-      width: 100%;
-      padding: 14px;
+    #output {
+      text-align: center;
+      font-weight: bold;
+      color: green;
       margin-top: 10px;
-      font-size: 16px;
-      font-weight: 500;
-      border-radius: var(--border-radius);
-      border: none;
-      background: linear-gradient(to right, var(--primary-color), var(--success-color));
-      color: white;
-      cursor: pointer;
-      transition: var(--transition);
-      box-shadow: 0 4px 15px rgba(67, 97, 238, 0.2);
     }
-    
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(67, 97, 238, 0.25);
+    #manualForm {
+      text-align: center;
+      margin-top: 20px;
     }
-    
-    button:active {
-      transform: translateY(0);
+    #manualResult {
+      font-weight: bold;
+      margin-top: 10px;
     }
-    
-    .hidden {
-      display: none;
-    }
-    
-    @media (max-width: 480px) {
-      .login-box {
-        padding: 30px 20px;
-      }
-      
-      h2 {
-        font-size: 24px;
-        margin-bottom: 25px;
-      }
-    }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
-  <div class="login-container">
-    <div class="login-box">
-      <h2>Attendance Tracker</h2>
-      <div class="form-group">
-        <label for="roleSelect">Select Your Role</label>
-        <select id="roleSelect">
-          <option value="" disabled selected>Select Role</option>
-          <option value="admin">Admin</option>
-          <option value="coordinator">Coordinator</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <select id="userSelect" class="hidden">
-          <option value="" disabled selected>Select Coordinator</option>
-          <option>Bhavy</option>
-          <option>Harsh</option>
-          <option>Mahmad</option>
-          <option>Kasim</option>
-          <option>Devendra</option>
-          <option>Jaini</option>
-          <option>Divya</option>
-          <option>Madhav</option>
-          <option>Astha</option>
-          <option>Pradip</option>
-          <option>Prince</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="passwordInput">Password</label>
-        <input type="password" id="passwordInput" placeholder="Enter your password">
-      </div>
-      <button onclick="login()">Login</button>
-    </div>
+  <h2>📋 Coordinator Attendance Panel</h2>
+
+  <select id="sheetDropdown">
+    <option value="" disabled selected>Select Session Sheet</option>
+  </select>
+
+  <input type="file" id="fileInput" accept=".xlsx,.csv" />
+  <button id="downloadBtn" onclick="downloadAttendance()" style="display:none;">Download Attendance</button>
+  <button id="resetBtn" onclick="resetUpload()" style="display:none; background: #dc3545;"></button>
+
+  <div id="scanner"></div>
+  <div id="output"></div>
+
+  <button onclick="toggleManualForm()">Manual Attendance</button>
+  <div id="manualForm" class="hidden">
+    <input type="text" id="manualEnroll" placeholder="Enter Enrollment No">
+    <button onclick="submitManual()">Submit</button>
+    <div id="manualResult"></div>
   </div>
 
+  <audio id="successSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3" preload="auto"></audio>
+
   <script>
-    const passwords = {
-      Bhavy: "Bhavy@123",
-      Harsh: "Harsh@123",
-      Mahmad: "Mahmad@123",
-      Kasim: "Kasim@123",
-      Devendra: "Devendra@123",
-      Jaini: "Jaini@123",
-      Divya: "Divya@123",
-      Madhav: "Madhav@123",
-      Astha: "Astha@123",
-      Pradip: "Pradip@123",
-      Prince: "Prince@123"
-    };
+    const scriptURL = "https://script.google.com/macros/s/AKfycbwCFFJtTvdO9KdNM2Vsqv2QiH_dFAUS4USaoH93pno3UXm41pS6BxM0CwteVQmHVcLL/exec";
+    let students = {}, attendance = {}, lastScanned = "", pendingQueue = [];
+    let sheetName = "", coordinator = localStorage.getItem("coordinator") || "Unknown";
 
-    const roleSelect = document.getElementById("roleSelect");
-    const userSelect = document.getElementById("userSelect");
+    window.onload = function () {
+      fetch(`${scriptURL}?action=getSheets`)
+        .then(res => res.json())
+        .then(data => {
+          const dropdown = document.getElementById("sheetDropdown");
+          data.sheets.forEach(sheet => {
+            const opt = document.createElement("option");
+            opt.value = sheet;
+            opt.textContent = sheet;
+            dropdown.appendChild(opt);
+          });
+        });
 
-    roleSelect.addEventListener("change", function() {
-      if (this.value === "coordinator") {
-        userSelect.classList.remove("hidden");
-      } else {
-        userSelect.classList.add("hidden");
-      }
+      const saved = localStorage.getItem("pendingAttendance");
+      if (saved) pendingQueue = JSON.parse(saved);
+    }
+
+    document.getElementById("sheetDropdown").addEventListener("change", e => {
+      sheetName = e.target.value;
     });
 
-    function login() {
-      const role = document.getElementById("roleSelect").value;
-      const password = document.getElementById("passwordInput").value.trim();
+    document.getElementById("fileInput").addEventListener("change", function(e) {
+      if (!sheetName) return alert("Please select a sheet first.");
 
-      if (!role) return alert("Please select your role.");
+      const file = e.target.files[0];
+      if (!file) return;
 
-      if (role === "admin") {
-        if (password === "admin@123") {
-          window.location.href = "admin.html";
+      const fileType = file.name.split('.').pop().toLowerCase();
+      if (!["xlsx", "csv"].includes(fileType)) {
+        alert("Only .xlsx or .csv files are allowed.");
+        e.target.value = ""; // clear file
+        return;
+      }
+
+      // ✅ Hide input & dropdown, show reset button
+      document.getElementById("sheetDropdown").style.display = "none";
+      document.getElementById("fileInput").style.display = "none";
+      document.getElementById("resetBtn").style.display = "block";
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(sheet);
+        students = {}; attendance = {};
+        jsonData.forEach(row => {
+          const enr = String(row['Enrollment No'] || row['EnrollmentNo'] || row['Enrollment'] || row[1]).trim();
+          const name = row['Name'] || row[2];
+          if (enr && name) {
+            students[enr] = name;
+            attendance[enr] = "Absent";
+          }
+        });
+        document.getElementById('downloadBtn').style.display = "block";
+        startScanner();
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    function startScanner() {
+      if (Quagga.initialized) return;
+      Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: document.querySelector('#scanner'),
+          constraints: { facingMode: "environment" }
+        },
+        locator: { patchSize: "x-small", halfSample: true },
+        decoder: { readers: ["code_128_reader"] },
+        locate: true,
+        frequency: 10
+      }, function (err) {
+        if (err) return console.error(err);
+        Quagga.initialized = true;
+        Quagga.start();
+        Quagga.onDetected(onDetected);
+      });
+    }
+
+    function onDetected(result) {
+      const code = result.codeResult.code;
+      if (code === lastScanned) return;
+      lastScanned = code;
+      if (students[code] && attendance[code] === "Absent") {
+        attendance[code] = "Present";
+        sendToGoogleSheets(code, students[code], "Scanner");
+        showOutput(`${students[code]} (${code}) marked Present (Scanner)`);
+      }
+      setTimeout(() => lastScanned = "", 400);
+    }
+
+    function sendToGoogleSheets(enr, name, method = "Scanner") {
+      const data = { EnrollmentNo: enr, Name: name, Status: "Present", Coordinator: coordinator, Method: method, Sheet: sheetName };
+      if (!navigator.onLine) return enqueuePending(data);
+      fetch(scriptURL, { method: "POST", body: buildFormData(data) })
+        .then(() => {})
+        .catch(() => enqueuePending(data));
+    }
+
+    function enqueuePending(data) {
+      pendingQueue.push(data);
+      localStorage.setItem("pendingAttendance", JSON.stringify(pendingQueue));
+    }
+
+    setInterval(() => {
+      if (navigator.onLine && pendingQueue.length > 0) {
+        const data = pendingQueue[0];
+        fetch(scriptURL, { method: "POST", body: buildFormData(data) })
+          .then(() => {
+            pendingQueue.shift();
+            localStorage.setItem("pendingAttendance", JSON.stringify(pendingQueue));
+          });
+      }
+    }, 5000);
+
+    function buildFormData(obj) {
+      const fd = new FormData();
+      Object.entries(obj).forEach(([k, v]) => fd.append(k, v));
+      return fd;
+    }
+
+    function showOutput(text) {
+      const out = document.getElementById('output');
+      out.innerHTML = "✔ " + text;
+      document.getElementById("successSound").play();
+    }
+
+    function downloadAttendance() {
+      const data = Object.keys(attendance).map(enr => ({
+        EnrollmentNo: enr,
+        Name: students[enr],
+        Status: attendance[enr]
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+      XLSX.writeFile(wb, "Updated_Attendance.xlsx");
+    }
+
+    function toggleManualForm() {
+      const form = document.getElementById("manualForm");
+      form.classList.toggle("hidden");
+      document.getElementById("manualResult").textContent = "";
+      document.getElementById("manualEnroll").value = "";
+    }
+
+    function submitManual() {
+      const enr = document.getElementById("manualEnroll").value.trim();
+      const result = document.getElementById("manualResult");
+      if (students[enr]) {
+        if (attendance[enr] === "Absent") {
+          attendance[enr] = "Present";
+          sendToGoogleSheets(enr, students[enr], "Manual");
+          showOutput(`${students[enr]} (${enr}) marked Present (Manual)`);
+          result.textContent = `✔ ${students[enr]} marked Present`;
+          result.style.color = "green";
         } else {
-          alert("Invalid admin password.");
+          result.textContent = "⚠ Already marked Present";
+          result.style.color = "orange";
         }
       } else {
-        const user = document.getElementById("userSelect").value;
-        if (!user) return alert("Please select coordinator.");
-
-        if (password === passwords[user]) {
-          localStorage.setItem("coordinator", user);
-          window.location.href = "coordinator.html";
-        } else {
-          alert("Invalid password for " + user);
-        }
+        result.textContent = "❌ Enrollment not found";
+        result.style.color = "red";
       }
     }
+
+    function resetUpload() {
+      document.getElementById("sheetDropdown").style.display = "block";
+      document.getElementById("fileInput").style.display = "block";
+      document.getElementById("resetBtn").style.display = "none";
+      document.getElementById("downloadBtn").style.display = "none";
+      document.getElementById("fileInput").value = "";
+      students = {};
+      attendance = {};
+    }
+
+    window.addEventListener("beforeunload", function (e) {
+      e.preventDefault();
+      e.returnValue = "Are you sure you want to leave? Attendance data might be lost.";
+    });
   </script>
 </body>
 </html>
