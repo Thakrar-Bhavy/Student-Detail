@@ -1,275 +1,234 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Coordinator Panel | Attendance Tracker</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-  <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-      padding: 20px;
-      background: #f8f9fa;
-      color: #333;
-    }
-    h2 { text-align: center; color: #007bff; }
-    input, button, select {
-      display: block;
-      width: 90%;
-      max-width: 400px;
-      margin: 10px auto;
-      padding: 10px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-    }
-    button {
-      background: #28a745;
-      color: white;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    button:hover { background: #218838; }
-    #scanner {
-      width: 100%;
-      max-width: 600px;
-      height: 280px;
-      border: 3px solid #007bff;
-      margin: 20px auto;
-      border-radius: 8px;
-      background: #fff;
-      overflow: hidden;
-    }
-    #output {
-      text-align: center;
-      font-weight: bold;
-      color: green;
-      margin-top: 10px;
-    }
-    #manualForm {
-      text-align: center;
-      margin-top: 20px;
-    }
-    #manualResult {
-      font-weight: bold;
-      margin-top: 10px;
-    }
-    .hidden { display: none; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .hidden { display: none; }
+        #scanner-container { width: 100%; height: 300px; background: #eee; position: relative; }
+        #scanner-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 3px dashed #007bff; }
+        .connection-status { position: fixed; bottom: 10px; right: 10px; padding: 5px 10px; border-radius: 5px; }
+        .online { background-color: #28a745; color: white; }
+        .offline { background-color: #dc3545; color: white; }
+        .sync-pending { background-color: #ffc107; color: black; }
+    </style>
 </head>
-<body>
-  <h2>📋 Coordinator Attendance Panel</h2>
-
-  <select id="sheetDropdown">
-    <option value="" disabled selected>Select Session Sheet</option>
-  </select>
-
-  <input type="file" id="fileInput" accept=".xlsx,.csv" />
-  <button id="downloadBtn" onclick="downloadAttendance()" style="display:none;">Download Attendance</button>
-  <button id="resetBtn" onclick="resetUpload()" style="display:none; background: #dc3545;"></button>
-
-  <div id="scanner"></div>
-  <div id="output"></div>
-
-  <button onclick="toggleManualForm()">Manual Attendance</button>
-  <div id="manualForm" class="hidden">
-    <input type="text" id="manualEnroll" placeholder="Enter Enrollment No">
-    <button onclick="submitManual()">Submit</button>
-    <div id="manualResult"></div>
-  </div>
-
-  <audio id="successSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3" preload="auto"></audio>
-
-  <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbwCFFJtTvdO9KdNM2Vsqv2QiH_dFAUS4USaoH93pno3UXm41pS6BxM0CwteVQmHVcLL/exec";
-    let students = {}, attendance = {}, lastScanned = "", pendingQueue = [];
-    let sheetName = "", coordinator = localStorage.getItem("coordinator") || "Unknown";
-
-    window.onload = function () {
-      fetch(`${scriptURL}?action=getSheets`)
-        .then(res => res.json())
-        .then(data => {
-          const dropdown = document.getElementById("sheetDropdown");
-          data.sheets.forEach(sheet => {
-            const opt = document.createElement("option");
-            opt.value = sheet;
-            opt.textContent = sheet;
-            dropdown.appendChild(opt);
-          });
-        });
-
-      const saved = localStorage.getItem("pendingAttendance");
-      if (saved) pendingQueue = JSON.parse(saved);
-    }
-
-    document.getElementById("sheetDropdown").addEventListener("change", e => {
-      sheetName = e.target.value;
-    });
-
-    document.getElementById("fileInput").addEventListener("change", function(e) {
-      if (!sheetName) return alert("Please select a sheet first.");
-
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const fileType = file.name.split('.').pop().toLowerCase();
-      if (!["xlsx", "csv"].includes(fileType)) {
-        alert("Only .xlsx or .csv files are allowed.");
-        e.target.value = ""; // clear file
-        return;
-      }
-
-      // ✅ Hide input & dropdown, show reset button
-      document.getElementById("sheetDropdown").style.display = "none";
-      document.getElementById("fileInput").style.display = "none";
-      document.getElementById("resetBtn").style.display = "block";
-
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(sheet);
-        students = {}; attendance = {};
-        jsonData.forEach(row => {
-          const enr = String(row['Enrollment No'] || row['EnrollmentNo'] || row['Enrollment'] || row[1]).trim();
-          const name = row['Name'] || row[2];
-          if (enr && name) {
-            students[enr] = name;
-            attendance[enr] = "Absent";
-          }
-        });
-        document.getElementById('downloadBtn').style.display = "block";
-        startScanner();
-      };
-      reader.readAsArrayBuffer(file);
-    });
-
-    function startScanner() {
-      if (Quagga.initialized) return;
-      Quagga.init({
-        inputStream: {
-          name: "Live",
-          type: "LiveStream",
-          target: document.querySelector('#scanner'),
-          constraints: { facingMode: "environment" }
-        },
-        locator: { patchSize: "x-small", halfSample: true },
-        decoder: { readers: ["code_128_reader"] },
-        locate: true,
-        frequency: 10
-      }, function (err) {
-        if (err) return console.error(err);
-        Quagga.initialized = true;
-        Quagga.start();
-        Quagga.onDetected(onDetected);
-      });
-    }
-
-    function onDetected(result) {
-      const code = result.codeResult.code;
-      if (code === lastScanned) return;
-      lastScanned = code;
-      if (students[code] && attendance[code] === "Absent") {
-        attendance[code] = "Present";
-        sendToGoogleSheets(code, students[code], "Scanner");
-        showOutput(`${students[code]} (${code}) marked Present (Scanner)`);
-      }
-      setTimeout(() => lastScanned = "", 400);
-    }
-
-    function sendToGoogleSheets(enr, name, method = "Scanner") {
-      const data = { EnrollmentNo: enr, Name: name, Status: "Present", Coordinator: coordinator, Method: method, Sheet: sheetName };
-      if (!navigator.onLine) return enqueuePending(data);
-      fetch(scriptURL, { method: "POST", body: buildFormData(data) })
-        .then(() => {})
-        .catch(() => enqueuePending(data));
-    }
-
-    function enqueuePending(data) {
-      pendingQueue.push(data);
-      localStorage.setItem("pendingAttendance", JSON.stringify(pendingQueue));
-    }
-
-    setInterval(() => {
-      if (navigator.onLine && pendingQueue.length > 0) {
-        const data = pendingQueue[0];
-        fetch(scriptURL, { method: "POST", body: buildFormData(data) })
-          .then(() => {
-            pendingQueue.shift();
-            localStorage.setItem("pendingAttendance", JSON.stringify(pendingQueue));
-          });
-      }
-    }, 5000);
-
-    function buildFormData(obj) {
-      const fd = new FormData();
-      Object.entries(obj).forEach(([k, v]) => fd.append(k, v));
-      return fd;
-    }
-
-    function showOutput(text) {
-      const out = document.getElementById('output');
-      out.innerHTML = "✔ " + text;
-      document.getElementById("successSound").play();
-    }
-
-    function downloadAttendance() {
-      const data = Object.keys(attendance).map(enr => ({
-        EnrollmentNo: enr,
-        Name: students[enr],
-        Status: attendance[enr]
-      }));
-      const ws = XLSX.utils.json_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Attendance");
-      XLSX.writeFile(wb, "Updated_Attendance.xlsx");
-    }
-
-    function toggleManualForm() {
-      const form = document.getElementById("manualForm");
-      form.classList.toggle("hidden");
-      document.getElementById("manualResult").textContent = "";
-      document.getElementById("manualEnroll").value = "";
-    }
-
-    function submitManual() {
-      const enr = document.getElementById("manualEnroll").value.trim();
-      const result = document.getElementById("manualResult");
-      if (students[enr]) {
-        if (attendance[enr] === "Absent") {
-          attendance[enr] = "Present";
-          sendToGoogleSheets(enr, students[enr], "Manual");
-          showOutput(`${students[enr]} (${enr}) marked Present (Manual)`);
-          result.textContent = `✔ ${students[enr]} marked Present`;
-          result.style.color = "green";
-        } else {
-          result.textContent = "⚠ Already marked Present";
-          result.style.color = "orange";
-        }
-      } else {
-        result.textContent = "❌ Enrollment not found";
-        result.style.color = "red";
-      }
-    }
-
-    function resetUpload() {
-      document.getElementById("sheetDropdown").style.display = "block";
-      document.getElementById("fileInput").style.display = "block";
-      document.getElementById("resetBtn").style.display = "none";
-      document.getElementById("downloadBtn").style.display = "none";
-      document.getElementById("fileInput").value = "";
-      students = {};
-      attendance = {};
-    }
-
-    window.addEventListener("beforeunload", function (e) {
-      e.preventDefault();
-      e.returnValue = "Are you sure you want to leave? Attendance data might be lost.";
-    });
-  </script>
+<body class="bg-light">
+    <!-- Login Section -->
+    <div id="login-section" class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="text-center">Attendance System Login</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Select Role</label>
+                            <select id="role-select" class="form-select">
+                                <option value="">-- Select Role --</option>
+                                <option value="coordinator">Coordinator</option>
+                                <option value="admin">Super Admin</option>
+                            </select>
+                        </div>
+                        
+                        <div id="coordinator-login" class="hidden">
+                            <div class="mb-3">
+                                <label class="form-label">Select Coordinator</label>
+                                <select id="coordinator-select" class="form-select">
+                                    <option value="">-- Select Coordinator --</option>
+                                    <option value="coordinator1">Coordinator 1</option>
+                                    <option value="coordinator2">Coordinator 2</option>
+                                    <option value="coordinator3">Coordinator 3</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <input type="password" id="coordinator-password" class="form-control" placeholder="Enter password">
+                            </div>
+                        </div>
+                        
+                        <div id="admin-login" class="hidden">
+                            <div class="mb-3">
+                                <label class="form-label">Admin Password</label>
+                                <input type="password" id="admin-password" class="form-control" placeholder="Enter admin password">
+                            </div>
+                        </div>
+                        
+                        <button id="login-btn" class="btn btn-primary w-100">Login</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Coordinator Panel -->
+    <div id="coordinator-panel" class="container mt-3 hidden">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>Coordinator Panel</h3>
+            <button id="coordinator-logout" class="btn btn-sm btn-outline-danger">Logout</button>
+        </div>
+        
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <i class="bi bi-file-excel"></i> Master Data Setup
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Upload Master Student List (Excel)</label>
+                    <input type="file" id="excel-upload" class="form-control" accept=".xlsx,.xls">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Select Active Sheet</label>
+                    <select id="sheet-select" class="form-select" disabled>
+                        <option value="">-- Select Sheet --</option>
+                    </select>
+                </div>
+                <button id="load-sheet-btn" class="btn btn-info" disabled>Load Sheet</button>
+            </div>
+        </div>
+        
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white">
+                <i class="bi bi-upc-scan"></i> Attendance Marking
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <button id="toggle-scanner-btn" class="btn btn-success mb-2">
+                        <i class="bi bi-camera"></i> Toggle Scanner
+                    </button>
+                    <div id="scanner-container" class="hidden">
+                        <div id="scanner-overlay"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Or Enter Enrollment Manually</label>
+                    <div class="input-group">
+                        <input type="text" id="manual-enrollment" class="form-control" placeholder="Enter enrollment number">
+                        <button id="manual-submit" class="btn btn-primary">Submit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-3">
+            <div class="card-header bg-warning text-dark">
+                <i class="bi bi-list-check"></i> Current Session
+            </div>
+            <div class="card-body">
+                <button id="download-attendance-btn" class="btn btn-warning mb-3">
+                    <i class="bi bi-download"></i> Download Attendance (CSV)
+                </button>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Enrollment</th>
+                                <th>Name</th>
+                                <th>Time</th>
+                                <th>Method</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendance-list">
+                            <!-- Attendance records will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Super Admin Panel -->
+    <div id="admin-panel" class="container mt-3 hidden">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>Super Admin Panel</h3>
+            <button id="admin-logout" class="btn btn-sm btn-outline-danger">Logout</button>
+        </div>
+        
+        <div class="card mb-3">
+            <div class="card-header bg-danger text-white">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Sheet Management
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Create New Sheet</label>
+                        <div class="input-group">
+                            <input type="text" id="new-sheet-name" class="form-control" placeholder="Sheet name">
+                            <button id="create-sheet-btn" class="btn btn-danger">Create</button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Delete Sheet</label>
+                        <div class="input-group">
+                            <select id="delete-sheet-select" class="form-select">
+                                <option value="">-- Select Sheet --</option>
+                            </select>
+                            <button id="delete-sheet-btn" class="btn btn-danger">Delete</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Download Sheet</label>
+                        <div class="input-group">
+                            <select id="download-sheet-select" class="form-select">
+                                <option value="">-- Select Sheet --</option>
+                            </select>
+                            <button id="download-sheet-btn" class="btn btn-danger">Download</button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Toggle Sheet Visibility</label>
+                        <div class="input-group">
+                            <select id="visibility-sheet-select" class="form-select">
+                                <option value="">-- Select Sheet --</option>
+                            </select>
+                            <button id="toggle-visibility-btn" class="btn btn-danger">Toggle</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <i class="bi bi-collection"></i> All Sheets
+            </div>
+            <div class="card-body">
+                <button id="refresh-sheets-btn" class="btn btn-secondary mb-3">
+                    <i class="bi bi-arrow-repeat"></i> Refresh Sheets
+                </button>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Sheet Name</th>
+                                <th>Visible to Coordinators</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sheets-list">
+                            <!-- Sheets will be listed here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Connection Status Indicator -->
+    <div id="connection-status" class="connection-status offline">
+        <i class="bi bi-wifi-off"></i> Offline
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Quagga/0.12.1/quagga.min.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
