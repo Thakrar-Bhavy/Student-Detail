@@ -1,51 +1,87 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Apps Script Test Insert</title>
-</head>
-<body>
-  <h2>Test Google Sheet Insert</h2>
-  <button onclick="sendTest()">Send Test Record</button>
+function doGet(e) {
+  return handleOptions(e);
+}
 
-  <pre id="result" style="margin-top:20px;background:#f0f0f0;padding:10px;border-radius:6px;"></pre>
+function doPost(e) {
+  try {
+    // Parse JSON body
+    const data = JSON.parse(e.postData.contents);
 
-  <script>
-    // 🔹 Replace with your Apps Script Web App /exec URL
-    const scriptURL = "https://script.google.com/macros/s/AKfycbzLbSR4XBs9FkJhn5gH1-umv75YZLAh8TiX3TWD8EDuqNAfMag7D3xZ7PQxR-5V8zqz/exec";
+    if (data.action === 'recordAttendance') {
+      const sheetName = data.sheetName || 'Default';
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      let sheet = ss.getSheetByName(sheetName);
 
-    function sendTest() {
-      const data = {
-        action: 'recordAttendance',
-        sheetName: 'TestSheet',
-        student: {
-          srNo: '1',
-          enrollment: '21018501210031',
-          firstName: 'John',
-          middleName: '',
-          lastName: 'Doe',
-          mobile: '9999999999',
-          email: 'john@example.com',
-          degree: 'BCA'
-        },
-        coordinator: 'Test Coordinator',
-        method: 'Manual',
-        timestamp: new Date().toISOString()
-      };
+      // Create sheet if it doesn't exist
+      if (!sheet) {
+        sheet = ss.insertSheet(sheetName);
+        sheet.appendRow([
+          "SrNo",
+          "EnrollmentNo",
+          "FirstName",
+          "MiddleName",
+          "LastName",
+          "StudentMobNo",
+          "EmailId",
+          "CurrentDegree",
+          "Coordinator",
+          "Timestamp",
+          "Method",
+          "Status"
+        ]);
+      }
 
-      fetch(scriptURL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      })
-      .then(res => res.text())  // get raw text first
-      .then(txt => {
-        document.getElementById('result').textContent = txt;
-      })
-      .catch(err => {
-        document.getElementById('result').textContent = 'Error: ' + err;
-      });
+      const s = data.student;
+      sheet.appendRow([
+        s.srNo,
+        s.enrollment,
+        s.firstName,
+        s.middleName,
+        s.lastName,
+        s.mobile,
+        s.email,
+        s.degree,
+        data.coordinator,
+        data.timestamp,
+        data.method,
+        "Present"
+      ]);
+
+      return addCorsHeaders(
+        ContentService.createTextOutput(
+          JSON.stringify({ success: true, message: "Attendance recorded" })
+        ).setMimeType(ContentService.MimeType.JSON)
+      );
     }
-  </script>
-</body>
-</html>
+
+    // Default response if action is unknown
+    return addCorsHeaders(
+      ContentService.createTextOutput(
+        JSON.stringify({ success: false, message: "Unknown action" })
+      ).setMimeType(ContentService.MimeType.JSON)
+    );
+
+  } catch (err) {
+    return addCorsHeaders(
+      ContentService.createTextOutput(
+        JSON.stringify({ success: false, error: err.message })
+      ).setMimeType(ContentService.MimeType.JSON)
+    );
+  }
+}
+
+// Handle OPTIONS requests (CORS preflight)
+function handleOptions(e) {
+  if (e && e.method && e.method === "OPTIONS") {
+    return addCorsHeaders(ContentService.createTextOutput(""));
+  }
+  return addCorsHeaders(ContentService.createTextOutput("OK"));
+}
+
+// Add CORS headers to all responses
+function addCorsHeaders(output) {
+  return output
+    .setHeader("Access-Control-Allow-Origin", "*")
+    .setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+    .setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
