@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Apps Script Test Insert</title>
+</head>
+<body>
+  <h2>Test Google Sheet Insert</h2>
+  <button onclick="sendTest()">Send Test Record</button>
+
+  <pre id="result" style="margin-top:20px;background:#f0f0f0;padding:10px;border-radius:6px;"></pre>
+
+  <script>
+    // 🔹 Replace with your Apps Script Web App /exec URL
+    const scriptURL = "https://script.google.com/macros/s/AKfycbzLbSR4XBs9FkJhn5gH1-umv75YZLAh8TiX3TWD8EDuqNAfMag7D3xZ7PQxR-5V8zqz/exec";
+
+    function sendTest() {
+      const data = {
+        action: 'recordAttendance',
+        sheetName: 'TestSheet',
+        student: {
+          srNo: '1',
+          enrollment: '21018501210031',
+          firstName: 'John',
+          middleName: '',
+          lastName: 'Doe',
+          mobile: '9999999999',
+          email: 'john@example.com',
+          degree: 'BCA'
+        },
+        coordinator: 'Test Coordinator',
+        method: 'Manual',
+        timestamp: new Date().toISOString()
+      };
+
+      fetch(scriptURL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+      .then(res => res.text())  // get raw text first
+      .then(txt => {
+        document.getElementById('result').textContent = txt;
+      })
+      .catch(err => {
+        document.getElementById('result').textContent = 'Error: ' + err;
+      });
+    }
+  </script>
+</body>
+</html>
