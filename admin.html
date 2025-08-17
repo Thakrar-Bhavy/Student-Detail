@@ -1,0 +1,219 @@
+<script>
+  // Session check
+  if (!sessionStorage.getItem("sessionActive") || sessionStorage.getItem("userRole") !== "admin") {
+    window.location.href = "login.html";
+  }
+
+  // Activity tracker
+  document.addEventListener('mousemove', resetSessionTimer);
+  document.addEventListener('keypress', resetSessionTimer);
+
+  function resetSessionTimer() {
+    sessionStorage.setItem("lastActivity", Date.now());
+  }
+
+  // Check for inactivity every minute
+  setInterval(checkInactivity, 60000);
+
+  function checkInactivity() {
+    const lastActivity = sessionStorage.getItem("lastActivity");
+    const now = Date.now();
+    const diff = now - lastActivity;
+    
+    // 30 minutes inactivity timeout
+    if (diff > 1800000) {
+      logout();
+    }
+  }
+
+  // Handle page refresh - if the page is refreshed, we'll keep the session
+  window.addEventListener('beforeunload', function(e) {
+    if (!e.currentTarget.performance.navigation.type === 1) { // Not a refresh
+      sessionStorage.clear();
+    }
+  });
+</script>
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+  // Only allow access if logged in as admin
+  if (!localStorage.getItem("adminLoggedIn")) {
+    alert("Unauthorized access. Please login as Admin.");
+    window.location.href = "login.html";
+  }
+</script>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Attendance Sheet Manager</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #f4f6f8;
+      color: #333;
+    }
+
+    h2, h3 {
+      color: #2c3e50;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      padding: 20px 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    input[type="text"], select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0 20px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 10px 18px;
+      margin: 5px 8px 10px 0;
+      font-size: 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: #3498db;
+      color: white;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    #createStatus, #manageStatus {
+      font-size: 14px;
+      color: green;
+      margin-top: 5px;
+    }
+
+    @media (max-width: 500px) {
+      .container {
+        padding: 15px 20px;
+      }
+
+      button {
+        width: 100%;
+        margin: 8px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Attendance Tracker (Admin)</h2>
+    <button onclick="logout()">Logout</button>
+<script>
+ function logout() {
+  sessionStorage.clear();
+  window.location.href = "login.html";
+}
+</script>
+
+
+    <!-- Create New Sheet -->
+    <input type="text" id="newSheetName" placeholder="Enter new sheet name" />
+    <button onclick="createNewSheet()">Create Sheet</button>
+    <p id="createStatus"></p>
+
+    <!-- Dropdown to select sheet -->
+    <h3>Manage Sheets</h3>
+    <select id="sheetList"></select><br />
+    <button onclick="triggerDownload()">Download XLSX</button>
+    <button onclick="deleteSelectedSheet()">Delete Sheet</button>
+    <p id="manageStatus"></p>
+  </div>
+
+  <!-- Hidden iframe to load download page -->
+  <iframe id="downloadFrame" style="display:none;"></iframe>
+
+  <script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxBeV48EPzmODUeUAk3coK6R_uq_WqN7jAb6nhU3NJxxnwwljj70q8EzrtQ6I0TUoZu/exec';
+
+    function loadSheets() {
+      fetch(`${scriptURL}?action=getSheets`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            const dropdown = document.getElementById('sheetList');
+            dropdown.innerHTML = '';
+            data.sheets.forEach(sheet => {
+              const option = document.createElement('option');
+              option.value = sheet;
+              option.textContent = sheet;
+              dropdown.appendChild(option);
+            });
+          }
+        });
+    }
+
+    function createNewSheet() {
+      const sheetName = document.getElementById('newSheetName').value.trim();
+      if (!sheetName) return alert("Enter a valid sheet name.");
+
+      fetch(scriptURL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'createSheet',
+          sheetName: sheetName
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('createStatus').textContent = data.message;
+        if (data.success) {
+          loadSheets();
+          document.getElementById('newSheetName').value = '';
+        }
+      });
+    }
+
+    function deleteSelectedSheet() {
+      const sheet = document.getElementById('sheetList').value;
+      if (!sheet) return alert("Please select a sheet.");
+      if (!confirm(`Are you sure you want to delete the sheet "${sheet}"?`)) return;
+
+      fetch(scriptURL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'deleteSheet',
+          sheetName: sheet
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('manageStatus').textContent = data.message;
+        if (data.success) {
+          loadSheets();
+        }
+      });
+    }
+
+    function triggerDownload() {
+      window.open("download.html", "_blank");
+    }
+
+    loadSheets();
+  </script>
+</body>
+</html>

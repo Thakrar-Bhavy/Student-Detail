@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Google Sheet Downloader</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #f4f6f8;
+      color: #333;
+      padding: 20px;
+      margin: 0;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      padding: 25px 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #2c3e50;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #555;
+    }
+
+    select {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background-color: #3498db;
+      color: white;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    .success {
+      color: green;
+      display: none;
+      margin-top: 15px;
+      text-align: center;
+      font-size: 15px;
+    }
+
+    @media (max-width: 500px) {
+      .container {
+        padding: 20px;
+      }
+
+      button {
+        margin-top: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Google Sheet Downloader</h1>
+
+    <div class="form-group">
+      <label for="sheetSelector">Select Sheet Tab:</label>
+      <select id="sheetSelector"></select>
+    </div>
+
+    <div class="form-group">
+      <label for="exportFormat">Download Format:</label>
+      <select id="exportFormat">
+        <option value="xlsx">Excel (.xlsx)</option>
+        <option value="pdf">PDF (.pdf)</option>
+        <option value="csv">CSV (.csv)</option>
+      </select>
+    </div>
+
+    <button onclick="downloadSheet()">Download Sheet</button>
+    <div id="successMsg" class="success">Download started!</div>
+  </div>
+
+  <script>
+
+// Session check - only allow if admin is logged in
+if (!sessionStorage.getItem("sessionActive") || sessionStorage.getItem("userRole") !== "admin") {
+  window.location.href = "login.html";
+}
+
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzTTb8msn3iOqfzwScAhLBcYgJpWAJtzy8x3-5qkIj60CZdXZfdLTRQw2Y6fIfX-3iS/exec';
+    let spreadsheetId = '';
+    let sheetData = [];
+
+    async function loadSheets() {
+      try {
+        const res = await fetch(`${scriptURL}?action=getSheetLinks`);
+        const data = await res.json();
+
+        if (data.success) {
+          spreadsheetId = data.spreadsheetId;
+          sheetData = data.sheets;
+
+          const sheetSelector = document.getElementById('sheetSelector');
+          sheetSelector.innerHTML = '';
+          data.sheets.forEach(sheet => {
+            const option = document.createElement('option');
+            option.value = sheet.gid;
+            option.textContent = sheet.name;
+            sheetSelector.appendChild(option);
+          });
+        } else {
+          alert("Failed to load sheets: " + data.message);
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Error fetching sheet list.");
+      }
+    }
+
+    function downloadSheet() {
+      const format = document.getElementById('exportFormat').value;
+      const selectedGid = document.getElementById('sheetSelector').value;
+      const successMsg = document.getElementById('successMsg');
+      let downloadUrl = '';
+
+      if (format === 'xlsx') {
+        downloadUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=xlsx`;
+      } else if (format === 'csv' || format === 'pdf') {
+        downloadUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=${format}&gid=${selectedGid}`;
+      } else {
+        alert("Unsupported format");
+        return;
+      }
+
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.target = '_blank';
+      a.download = `sheet_export.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      successMsg.style.display = 'block';
+    }
+
+    window.onload = loadSheets;
+  </script>
+</body>
+</html>

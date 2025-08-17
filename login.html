@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Attendance Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --success-color: #4cc9f0;
+      --error-color: #f72585;
+      --light-gray: #f8f9fa;
+      --dark-gray: #6c757d;
+      --border-radius: 8px;
+      --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      --transition: all 0.3s ease;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: #333;
+      line-height: 1.6;
+    }
+    
+    .login-container {
+      width: 100%;
+      max-width: 420px;
+      padding: 0 20px;
+    }
+    
+    .login-box {
+      background: white;
+      padding: 40px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .login-box::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 5px;
+      background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+    }
+    
+    h2 {
+      margin-bottom: 30px;
+      color: var(--primary-color);
+      font-weight: 600;
+      font-size: 28px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--dark-gray);
+      font-size: 14px;
+    }
+    
+    select, input {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 15px;
+      border-radius: var(--border-radius);
+      border: 1px solid #e0e0e0;
+      background-color: var(--light-gray);
+      transition: var(--transition);
+      appearance: none;
+    }
+    
+    select:focus, input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+      background-color: white;
+    }
+    
+    select {
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+    }
+    
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      font-size: 16px;
+      font-weight: 500;
+      border-radius: var(--border-radius);
+      border: none;
+      background: linear-gradient(to right, var(--primary-color), var(--success-color));
+      color: white;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 4px 15px rgba(67, 97, 238, 0.2);
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(67, 97, 238, 0.25);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    @media (max-width: 480px) {
+      .login-box {
+        padding: 30px 20px;
+      }
+      
+      h2 {
+        font-size: 24px;
+        margin-bottom: 25px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-box">
+      <h2>Attendance Tracker</h2>
+      <div class="form-group">
+        <label for="roleSelect">Select Your Role</label>
+        <select id="roleSelect">
+          <option value="" disabled selected>Select Role</option>
+          <option value="admin">Admin</option>
+          <option value="coordinator">Coordinator</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <select id="userSelect" class="hidden">
+          <option value="" disabled selected>Select Coordinator</option>
+          <option>Bhavy</option>
+          <option>Harsh</option>
+          <option>Mahmad</option>
+          <option>Kasim</option>
+          <option>Devendra</option>
+          <option>Jaini</option>
+          <option>Divya</option>
+          <option>Madhav</option>
+          <option>Astha</option>
+          <option>Pradip</option>
+          <option>Prince</option>
+          <option>Manohar</option>
+          <option>Yogesh</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="passwordInput">Password</label>
+        <input type="password" id="passwordInput" placeholder="Enter your password">
+      </div>
+      <button onclick="login()">Login</button>
+    </div>
+  </div>
+
+  <script>
+    const passwords = {
+      Bhavy: "Bhavy@123",
+      Harsh: "Harsh@123",
+      Mahmad: "Mahmad@123",
+      Kasim: "Kasim@123",
+      Devendra: "Devendra@123",
+      Jaini: "Jaini@123",
+      Divya: "Divya@123",
+      Madhav: "Madhav@123",
+      Astha: "Astha@123",
+      Pradip: "Pradip@123",
+      Prince: "Prince@123",
+      Yogesh: "Yogesh@123",
+      Mannohar: "Manohar@123"
+      
+    };
+
+    const roleSelect = document.getElementById("roleSelect");
+    const userSelect = document.getElementById("userSelect");
+
+    roleSelect.addEventListener("change", function() {
+      if (this.value === "coordinator") {
+        userSelect.classList.remove("hidden");
+      } else {
+        userSelect.classList.add("hidden");
+      }
+    });
+
+    function login() {
+  const role = document.getElementById("roleSelect").value;
+  const password = document.getElementById("passwordInput").value.trim();
+
+  if (!role) return alert("Please select your role.");
+
+  if (role === "admin") {
+    if (password === "admin@mihir" || password === "admin@Bhavy") {
+      // Set session flag and timestamp
+      sessionStorage.setItem("sessionActive", "true");
+      sessionStorage.setItem("lastActivity", Date.now());
+      sessionStorage.setItem("userRole", "admin");
+      window.location.href = "admin.html";
+    } else {
+      alert("Invalid admin password.");
+    }
+  } else {
+    const user = document.getElementById("userSelect").value;
+    if (!user) return alert("Please select coordinator.");
+
+    if (password === passwords[user]) {
+      // Set session flag and timestamp
+      sessionStorage.setItem("sessionActive", "true");
+      sessionStorage.setItem("lastActivity", Date.now());
+      sessionStorage.setItem("userRole", "coordinator");
+      localStorage.setItem("coordinator", user); // Keep in localStorage for coordinator data
+      window.location.href = "coordinator.html";
+    } else {
+      alert("Invalid password for " + user);
+    }
+  }
+}
+  </script>
+</body>
+</html>
