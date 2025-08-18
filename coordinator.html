@@ -129,28 +129,18 @@
 }
     
     #scanner {
-      width: 100%;
-      height: 300px;
-      background: #f0f0f0;
-      margin: 15px 0;
-      border-radius: 8px;
-      overflow: hidden;
-      position: relative;
-    }
+  width: 100%;
+  height: 300px;
+  background: black;
+  margin: 15px 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
     
-    #scanner-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.5);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: white;
-      font-size: 18px;
-    }
+#scanner-overlay {
+  background: transparent !important;
+  color: transparent !important;
+}
     
     #output {
       text-align: center;
@@ -232,7 +222,7 @@
     <div class="section">
       <div class="section-title">3. Take Attendance</div>
       <div id="scanner">
-        <div id="scanner-overlay">Scanner will activate after selecting session and uploading student list</div>
+        
       </div>
       <div id="output"></div>
       
@@ -269,8 +259,8 @@
     </div>
   </div>
 
-  <audio id="successSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3" preload="auto"></audio>
-  <audio id="errorSound" src="https://www.soundjay.com/buttons/sounds/button-5.mp3" preload="auto"></audio>
+  <audio id="successSound" src="https://www.soundjay.com/buttons/sounds/button-09.mp3" preload="auto"></audio>
+  <audio id="errorSound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3" preload="auto"></audio>
 
   <script>
 
@@ -485,8 +475,7 @@ checkSetupStatus();
     function startScanner() {
       if (scannerActive) return;
       
-      elements.scannerOverlay.textContent = "Initializing scanner...";
-      
+            
       Quagga.init({
         inputStream: {
           name: "Live",
@@ -509,8 +498,7 @@ checkSetupStatus();
         
         scannerActive = true;
         Quagga.start();
-        elements.scannerOverlay.classList.add("hidden");
-        
+                
         Quagga.onDetected(function(result) {
           const code = result.codeResult.code;
           if (code === lastScanned) return;
