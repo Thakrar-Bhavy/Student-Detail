@@ -1,64 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Attendance Sheet Manager</title>
-
-  <!-- 🔐 Admin Access Control -->
-  <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    // ✅ Check localStorage instead of sessionStorage
-    if (localStorage.getItem("userRole") !== "admin" || localStorage.getItem("adminLoggedIn") !== "true") {
-      alert("Unauthorized access. Please login as Admin.");
-      window.location.href = "login.html";
-    }
-  });
-
-  // Inactivity tracker
-  document.addEventListener('mousemove', resetSessionTimer);
-  document.addEventListener('keypress', resetSessionTimer);
-
-  function resetSessionTimer() {
-    localStorage.setItem("lastActivity", Date.now());
-  }
-
-  // Check for inactivity every minute
-  setInterval(checkInactivity, 60000);
-
-  function checkInactivity() {
-    const lastActivity = localStorage.getItem("lastActivity");
-    if (!lastActivity) return;
-
-    const now = Date.now();
-    const diff = now - lastActivity;
-    
-    // 30 minutes inactivity timeout
-    if (diff > 1800000) {
-      logout();
-    }
-  }
-
-  function logout() {
-    localStorage.removeItem("adminLoggedIn");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("lastActivity");
-    window.location.href = "login.html";
-  }
-  </script>
-</head>
-<body>
-  <!-- your admin page HTML here -->
-</body>
-</html>
-
-
-
-
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
   <script>
   // Only allow access if logged in as admin
   if (!localStorage.getItem("adminLoggedIn")) {
@@ -127,6 +69,42 @@
       margin-top: 5px;
     }
 
+    /* Loader Styles */
+    .loader-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      display: none;
+    }
+
+    .loader {
+      width: 48px;
+      height: 48px;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loader-content {
+      text-align: center;
+      margin-top: 20px;
+      color: #2c3e50;
+      font-weight: 500;
+    }
+
     @media (max-width: 500px) {
       .container {
         padding: 15px 20px;
@@ -140,16 +118,17 @@
   </style>
 </head>
 <body>
+  <!-- Loader Overlay -->
+  <div class="loader-overlay" id="loader">
+    <div>
+      <div class="loader"></div>
+      <div class="loader-content">Processing your request...</div>
+    </div>
+  </div>
+
   <div class="container">
     <h2>Attendance Tracker (Admin)</h2>
     <button onclick="logout()">Logout</button>
-<script>
- function logout() {
-  sessionStorage.clear();
-  window.location.href = "login.html";
-}
-</script>
-
 
     <!-- Create New Sheet -->
     <input type="text" id="newSheetName" placeholder="Enter new sheet name" />
@@ -169,6 +148,15 @@
 
   <script>
     const scriptURL = 'https://script.google.com/macros/s/AKfycbxBeV48EPzmODUeUAk3coK6R_uq_WqN7jAb6nhU3NJxxnwwljj70q8EzrtQ6I0TUoZu/exec';
+
+    // Loader functions
+    function showLoader() {
+      document.getElementById('loader').style.display = 'flex';
+    }
+    
+    function hideLoader() {
+      document.getElementById('loader').style.display = 'none';
+    }
 
     function loadSheets() {
       fetch(`${scriptURL}?action=getSheets`)
@@ -191,6 +179,8 @@
       const sheetName = document.getElementById('newSheetName').value.trim();
       if (!sheetName) return alert("Enter a valid sheet name.");
 
+      showLoader();
+      
       fetch(scriptURL, {
         method: 'POST',
         body: JSON.stringify({
@@ -205,6 +195,12 @@
           loadSheets();
           document.getElementById('newSheetName').value = '';
         }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      })
+      .finally(() => {
+        hideLoader();
       });
     }
 
@@ -213,6 +209,8 @@
       if (!sheet) return alert("Please select a sheet.");
       if (!confirm(`Are you sure you want to delete the sheet "${sheet}"?`)) return;
 
+      showLoader();
+      
       fetch(scriptURL, {
         method: 'POST',
         body: JSON.stringify({
@@ -226,11 +224,24 @@
         if (data.success) {
           loadSheets();
         }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      })
+      .finally(() => {
+        hideLoader();
       });
     }
 
     function triggerDownload() {
       window.open("download.html", "_blank");
+    }
+
+    function logout() {
+      localStorage.removeItem("adminLoggedIn");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("lastActivity");
+      window.location.href = "login.html";
     }
 
     loadSheets();
