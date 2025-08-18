@@ -1,7 +1,23 @@
 <script>
-  // Session check
-  if (!sessionStorage.getItem("sessionActive") || sessionStorage.getItem("userRole") !== "admin") {
-    window.location.href = "login.html";
+  // Enhanced session check that works with GitHub Pages
+  function checkSession() {
+    // Check both localStorage and sessionStorage for compatibility
+    const adminLoggedIn = localStorage.getItem("adminLoggedIn") === "true" || 
+                         sessionStorage.getItem("adminLoggedIn") === "true";
+    const sessionActive = sessionStorage.getItem("sessionActive") === "true";
+    const userRole = sessionStorage.getItem("userRole");
+    
+    if (!adminLoggedIn || !sessionActive || userRole !== "admin") {
+      alert("Unauthorized access. Please login as Admin.");
+      window.location.href = "login.html";
+      return false;
+    }
+    return true;
+  }
+
+  // Run check immediately
+  if (!checkSession()) {
+    // Redirect will happen from checkSession
   }
 
   // Activity tracker
@@ -18,7 +34,7 @@
   function checkInactivity() {
     const lastActivity = sessionStorage.getItem("lastActivity");
     const now = Date.now();
-    const diff = now - lastActivity;
+    const diff = now - (lastActivity ? parseInt(lastActivity) : 0);
     
     // 30 minutes inactivity timeout
     if (diff > 1800000) {
@@ -26,10 +42,12 @@
     }
   }
 
-  // Handle page refresh - if the page is refreshed, we'll keep the session
-  window.addEventListener('beforeunload', function(e) {
-    if (!e.currentTarget.performance.navigation.type === 1) { // Not a refresh
-      sessionStorage.clear();
+  // Handle page refresh/navigation
+  window.addEventListener('beforeunload', function() {
+    // Keep session alive for page refreshes
+    if (performance.navigation.type !== 1) {
+      sessionStorage.removeItem("sessionActive");
+      localStorage.removeItem("adminLoggedIn");
     }
   });
 </script>
@@ -37,14 +55,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script>
-  // Only allow access if logged in as admin
-  if (!localStorage.getItem("adminLoggedIn")) {
-    alert("Unauthorized access. Please login as Admin.");
-    window.location.href = "login.html";
-  }
-</script>
-
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Attendance Sheet Manager</title>
@@ -196,6 +206,7 @@
 
     function logout() {
       sessionStorage.clear();
+      localStorage.removeItem("adminLoggedIn");
       window.location.href = "login.html";
     }
 
@@ -278,6 +289,7 @@
       window.open("download.html", "_blank");
     }
 
+    // Initialize the page
     loadSheets();
   </script>
 </body>
