@@ -214,7 +214,8 @@
       }
     });
 
-    function login() {
+    function login(e) {
+      e.preventDefault();
   const role = document.getElementById("roleSelect").value;
   const password = document.getElementById("passwordInput").value.trim();
 
