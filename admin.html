@@ -1,38 +1,42 @@
 <script>
-  // Session check
-  if (!sessionStorage.getItem("sessionActive") || sessionStorage.getItem("userRole") !== "admin") {
+document.addEventListener("DOMContentLoaded", () => {
+  // Session check (use ONLY sessionStorage, not localStorage)
+  if (sessionStorage.getItem("userRole") !== "admin" || sessionStorage.getItem("sessionActive") !== "true") {
+    alert("Unauthorized access. Please login as Admin.");
     window.location.href = "login.html";
   }
+});
 
-  // Activity tracker
-  document.addEventListener('mousemove', resetSessionTimer);
-  document.addEventListener('keypress', resetSessionTimer);
+// Activity tracker
+document.addEventListener('mousemove', resetSessionTimer);
+document.addEventListener('keypress', resetSessionTimer);
 
-  function resetSessionTimer() {
-    sessionStorage.setItem("lastActivity", Date.now());
+function resetSessionTimer() {
+  sessionStorage.setItem("lastActivity", Date.now());
+}
+
+// Check for inactivity every minute
+setInterval(checkInactivity, 60000);
+
+function checkInactivity() {
+  const lastActivity = sessionStorage.getItem("lastActivity");
+  if (!lastActivity) return;
+
+  const now = Date.now();
+  const diff = now - lastActivity;
+  
+  // 30 minutes inactivity timeout
+  if (diff > 1800000) {
+    logout();
   }
+}
 
-  // Check for inactivity every minute
-  setInterval(checkInactivity, 60000);
-
-  function checkInactivity() {
-    const lastActivity = sessionStorage.getItem("lastActivity");
-    const now = Date.now();
-    const diff = now - lastActivity;
-    
-    // 30 minutes inactivity timeout
-    if (diff > 1800000) {
-      logout();
-    }
-  }
-
-  // Handle page refresh - if the page is refreshed, we'll keep the session
-  window.addEventListener('beforeunload', function(e) {
-    if (!e.currentTarget.performance.navigation.type === 1) { // Not a refresh
-      sessionStorage.clear();
-    }
-  });
+function logout() {
+  sessionStorage.clear();
+  window.location.href = "login.html";
+}
 </script>
+
 
 
 
