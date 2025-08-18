@@ -41,7 +41,7 @@
 <head>
   <script>
   // Only allow access if logged in as admin
-  if (!localStorage.getItem("adminLoggedIn")) {
+  if (sessionStorage.getItem("userRole") !== "admin") {
     alert("Unauthorized access. Please login as Admin.");
     window.location.href = "login.html";
   }
