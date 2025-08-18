@@ -138,7 +138,7 @@
       position: relative;
     }
     
-/*     #scanner-overlay {
+    #scanner-overlay {
       position: absolute;
       top: 0;
       left: 0;
@@ -150,7 +150,7 @@
       align-items: center;
       color: white;
       font-size: 18px;
-    } */
+    }
     
     #output {
       text-align: center;
@@ -238,7 +238,7 @@
       
       <button onclick="toggleManualForm()">📝 Manual Attendance Entry</button>
       <div id="manualForm" class="hidden">
-        <input type="number" pattern="[0-9]*" inputmode="numeric" id="manualEnroll" placeholder="Enter Enrollment Number">
+        <input type="text" id="manualEnroll" placeholder="Enter Enrollment Number">
         <button onclick="submitManual()">Submit Attendance</button>
         <div id="manualResult"></div>
       </div>
@@ -264,14 +264,13 @@
   📥 Download Attendance Report
 </button>
 <button id="downloadBtn" onclick="showSetupSections()">
-  📂 Upload Excel / Select Sheet
+  ⚙️ Re Upload Sheet Or Sellect Google Sheet
 </button>
     </div>
   </div>
 
-
   <audio id="successSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3" preload="auto"></audio>
-  <audio id="errorSound" src="https://www.soundjay.com/buttons/sounds/button-8.mp3" preload="auto"></audio>
+  <audio id="errorSound" src="https://www.soundjay.com/buttons/sounds/button-5.mp3" preload="auto"></audio>
 
   <script>
 
@@ -529,8 +528,8 @@ checkSetupStatus();
     // Process scanned barcode
     function processScan(code) {
       if (!students[code]) {
-        //showOutput(`Enrollment ${code} not found in list`, "error");
-        //elements.errorSound.play();
+        showOutput(`Enrollment ${code} not found in list`, "error");
+        elements.errorSound.play();
         return;
       }
       
@@ -589,11 +588,13 @@ checkSetupStatus();
       
       if (!students[enr]) {
         showManualResult("Enrollment not found", "error");
+        elements.errorSound.play();
         return;
       }
       
       if (attendance[enr] === "Present") {
         showManualResult("Already marked present", "warning");
+        elements.errorSound.play();
         return;
       }
       
