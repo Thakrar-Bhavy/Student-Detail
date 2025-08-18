@@ -151,37 +151,39 @@
   <div class="login-container">
     <div class="login-box">
       <h2>Attendance Tracker</h2>
-      <div class="form-group">
-        <label for="roleSelect">Select Your Role</label>
-        <select id="roleSelect">
-          <option value="" disabled selected>Select Role</option>
-          <option value="admin">Admin</option>
-          <option value="coordinator">Coordinator</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <select id="userSelect" class="hidden">
-          <option value="" disabled selected>Select Coordinator</option>
-          <option>Bhavy</option>
-          <option>Harsh</option>
-          <option>Mahmad</option>
-          <option>Kasim</option>
-          <option>Devendra</option>
-          <option>Jaini</option>
-          <option>Divya</option>
-          <option>Madhav</option>
-          <option>Astha</option>
-          <option>Pradip</option>
-          <option>Prince</option>
-          <option>Manohar</option>
-          <option>Yogesh</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="passwordInput">Password</label>
-        <input type="password" id="passwordInput" placeholder="Enter your password">
-      </div>
-      <button onclick="login()">Login</button>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="roleSelect">Select Your Role</label>
+          <select id="roleSelect">
+            <option value="" disabled selected>Select Role</option>
+            <option value="admin">Admin</option>
+            <option value="coordinator">Coordinator</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <select id="userSelect" class="hidden">
+            <option value="" disabled selected>Select Coordinator</option>
+            <option>Bhavy</option>
+            <option>Harsh</option>
+            <option>Mahmad</option>
+            <option>Kasim</option>
+            <option>Devendra</option>
+            <option>Jaini</option>
+            <option>Divya</option>
+            <option>Madhav</option>
+            <option>Astha</option>
+            <option>Pradip</option>
+            <option>Prince</option>
+            <option>Manohar</option>
+            <option>Yogesh</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="passwordInput">Password</label>
+          <input type="password" id="passwordInput" placeholder="Enter your password">
+        </div>
+        <button type="submit">Login</button>
+      </form>
     </div>
   </div>
 
@@ -199,8 +201,7 @@
       Pradip: "Pradip@123",
       Prince: "Prince@123",
       Yogesh: "Yogesh@123",
-      Mannohar: "Manohar@123"
-      
+      Manohar: "Manohar@123" // ✅ spelling fixed
     };
 
     const roleSelect = document.getElementById("roleSelect");
@@ -214,40 +215,41 @@
       }
     });
 
+    document.getElementById("loginForm").addEventListener("submit", login);
+
     function login(e) {
-      e.preventDefault();
-  const role = document.getElementById("roleSelect").value;
-  const password = document.getElementById("passwordInput").value.trim();
+      e.preventDefault(); // ✅ stops form from refreshing
 
-  if (!role) return alert("Please select your role.");
+      const role = roleSelect.value;
+      const password = document.getElementById("passwordInput").value.trim();
 
-  if (role === "admin") {
-    if (password === "admin@mihir" || password === "Admin@bhavy") {
-      console.log("admin"+ role+ password);
-      // Set session flag and timestamp
-      sessionStorage.setItem("sessionActive", "true");
-      sessionStorage.setItem("lastActivity", Date.now());
-      sessionStorage.setItem("userRole", "admin");
-      window.location.href = "admin.html";
-    } else {
-      alert("Invalid admin password.");
+      if (!role) return alert("Please select your role.");
+
+      if (role === "admin") {
+        if (password === "admin@mihir" || password === "Admin@bhavy") {
+          sessionStorage.setItem("sessionActive", "true");
+          sessionStorage.setItem("lastActivity", Date.now());
+          sessionStorage.setItem("userRole", "admin");
+          window.location.href = "./admin.html"; // ✅ relative path for GitHub Pages
+        } else {
+          alert("Invalid admin password.");
+        }
+      } else {
+        const user = userSelect.value;
+        if (!user) return alert("Please select coordinator.");
+
+        if (password === passwords[user]) {
+          sessionStorage.setItem("sessionActive", "true");
+          sessionStorage.setItem("lastActivity", Date.now());
+          sessionStorage.setItem("userRole", "coordinator");
+          localStorage.setItem("coordinator", user);
+          window.location.href = "./coordinator.html"; // ✅ relative path
+        } else {
+          alert("Invalid password for " + user);
+        }
+      }
     }
-  } else {
-    const user = document.getElementById("userSelect").value;
-    if (!user) return alert("Please select coordinator.");
-
-    if (password === passwords[user]) {
-      // Set session flag and timestamp
-      sessionStorage.setItem("sessionActive", "true");
-      sessionStorage.setItem("lastActivity", Date.now());
-      sessionStorage.setItem("userRole", "coordinator");
-      localStorage.setItem("coordinator", user); // Keep in localStorage for coordinator data
-      window.location.href = "coordinator.html";
-    } else {
-      alert("Invalid password for " + user);
-    }
-  }
-}
   </script>
 </body>
+
 </html>
