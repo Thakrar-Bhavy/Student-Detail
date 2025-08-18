@@ -1,41 +1,57 @@
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  // Session check (use ONLY sessionStorage, not localStorage)
-  if (sessionStorage.getItem("userRole") !== "admin" || sessionStorage.getItem("sessionActive") !== "true") {
-    alert("Unauthorized access. Please login as Admin.");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Attendance Sheet Manager</title>
+
+  <!-- 🔐 Admin Access Control -->
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // ✅ Check localStorage instead of sessionStorage
+    if (localStorage.getItem("userRole") !== "admin" || localStorage.getItem("adminLoggedIn") !== "true") {
+      alert("Unauthorized access. Please login as Admin.");
+      window.location.href = "login.html";
+    }
+  });
+
+  // Inactivity tracker
+  document.addEventListener('mousemove', resetSessionTimer);
+  document.addEventListener('keypress', resetSessionTimer);
+
+  function resetSessionTimer() {
+    localStorage.setItem("lastActivity", Date.now());
+  }
+
+  // Check for inactivity every minute
+  setInterval(checkInactivity, 60000);
+
+  function checkInactivity() {
+    const lastActivity = localStorage.getItem("lastActivity");
+    if (!lastActivity) return;
+
+    const now = Date.now();
+    const diff = now - lastActivity;
+    
+    // 30 minutes inactivity timeout
+    if (diff > 1800000) {
+      logout();
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem("adminLoggedIn");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("lastActivity");
     window.location.href = "login.html";
   }
-});
+  </script>
+</head>
+<body>
+  <!-- your admin page HTML here -->
+</body>
+</html>
 
-// Activity tracker
-document.addEventListener('mousemove', resetSessionTimer);
-document.addEventListener('keypress', resetSessionTimer);
-
-function resetSessionTimer() {
-  sessionStorage.setItem("lastActivity", Date.now());
-}
-
-// Check for inactivity every minute
-setInterval(checkInactivity, 60000);
-
-function checkInactivity() {
-  const lastActivity = sessionStorage.getItem("lastActivity");
-  if (!lastActivity) return;
-
-  const now = Date.now();
-  const diff = now - lastActivity;
-  
-  // 30 minutes inactivity timeout
-  if (diff > 1800000) {
-    logout();
-  }
-}
-
-function logout() {
-  sessionStorage.clear();
-  window.location.href = "login.html";
-}
-</script>
 
 
 
