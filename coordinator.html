@@ -238,7 +238,7 @@
       
       <button onclick="toggleManualForm()">📝 Manual Attendance Entry</button>
       <div id="manualForm" class="hidden">
-        <input type="number" id="manualEnroll" placeholder="Enter Enrollment Number">
+<input type="number" pattern="[0-9]*" inputmode="numeric" id="manualEnroll" placeholder="Enter Enrollment Number">
         <button onclick="submitManual()">Submit Attendance</button>
         <div id="manualResult"></div>
       </div>
@@ -269,11 +269,10 @@
     </div>
   </div>
 
-  <audio id="successSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3" preload="auto"></audio>
-  <audio id="errorSound" src="https://www.soundjay.com/buttons/sounds/button-5.mp3" preload="auto"></audio>
+  <audio id="successSound" src="https://www.soundjay.com/buttons/sounds/button-09.mp3" preload="auto"></audio>
+  <audio id="errorSound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3" preload="auto"></audio>
 
   <script>
-
 
 
 
@@ -588,13 +587,11 @@ checkSetupStatus();
       
       if (!students[enr]) {
         showManualResult("Enrollment not found", "error");
-        elements.errorSound.play();
         return;
       }
       
       if (attendance[enr] === "Present") {
         showManualResult("Already marked present", "warning");
-        elements.errorSound.play();
         return;
       }
       
