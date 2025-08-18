@@ -34,14 +34,12 @@
   });
 </script>
 
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <script>
-  Only allow access if logged in as admin
-  if (sessionStorage.getItem("userRole") !== "admin") {
+  // Only allow access if logged in as admin
+  if (!localStorage.getItem("adminLoggedIn")) {
     alert("Unauthorized access. Please login as Admin.");
     window.location.href = "login.html";
   }
@@ -107,6 +105,43 @@
       margin-top: 5px;
     }
 
+    #loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      display: none;
+    }
+
+    .loader-content {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      margin: 0 auto 20px;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
     @media (max-width: 500px) {
       .container {
         padding: 15px 20px;
@@ -123,13 +158,6 @@
   <div class="container">
     <h2>Attendance Tracker (Admin)</h2>
     <button onclick="logout()">Logout</button>
-<script>
- function logout() {
-  sessionStorage.clear();
-  window.location.href = "login.html";
-}
-</script>
-
 
     <!-- Create New Sheet -->
     <input type="text" id="newSheetName" placeholder="Enter new sheet name" />
@@ -147,8 +175,29 @@
   <!-- Hidden iframe to load download page -->
   <iframe id="downloadFrame" style="display:none;"></iframe>
 
+  <!-- Loader -->
+  <div id="loader">
+    <div class="loader-content">
+      <div class="spinner"></div>
+      <p style="margin:0; font-size:18px; color:#333;">Processing...</p>
+    </div>
+  </div>
+
   <script>
     const scriptURL = 'https://script.google.com/macros/s/AKfycbxBeV48EPzmODUeUAk3coK6R_uq_WqN7jAb6nhU3NJxxnwwljj70q8EzrtQ6I0TUoZu/exec';
+
+    function showLoader() {
+      document.getElementById('loader').style.display = 'flex';
+    }
+    
+    function hideLoader() {
+      document.getElementById('loader').style.display = 'none';
+    }
+
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = "login.html";
+    }
 
     function loadSheets() {
       fetch(`${scriptURL}?action=getSheets`)
@@ -170,7 +219,9 @@
     function createNewSheet() {
       const sheetName = document.getElementById('newSheetName').value.trim();
       if (!sheetName) return alert("Enter a valid sheet name.");
-
+      
+      showLoader();
+      
       fetch(scriptURL, {
         method: 'POST',
         body: JSON.stringify({
@@ -185,6 +236,12 @@
           loadSheets();
           document.getElementById('newSheetName').value = '';
         }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      })
+      .finally(() => {
+        hideLoader();
       });
     }
 
@@ -192,7 +249,9 @@
       const sheet = document.getElementById('sheetList').value;
       if (!sheet) return alert("Please select a sheet.");
       if (!confirm(`Are you sure you want to delete the sheet "${sheet}"?`)) return;
-
+     
+      showLoader();
+      
       fetch(scriptURL, {
         method: 'POST',
         body: JSON.stringify({
@@ -206,6 +265,12 @@
         if (data.success) {
           loadSheets();
         }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      })
+      .finally(() => {
+        hideLoader();
       });
     }
 
