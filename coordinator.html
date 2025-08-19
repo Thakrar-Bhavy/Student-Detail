@@ -515,8 +515,8 @@ checkSetupStatus();
     // Process scanned barcode
     function processScan(code) {
       if (!students[code]) {
-        showOutput(`Enrollment ${code} not found in list`, "error");
-        elements.errorSound.play();
+        // showOutput(`Enrollment ${code} not found in list`, "error");
+        // elements.errorSound.play();
         return;
       }
       
