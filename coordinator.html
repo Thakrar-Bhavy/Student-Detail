@@ -330,8 +330,7 @@
     let scannerActive = false;
     let scanWorker = null;
     let processingFrame = false;
-    const coordinator = sessionStorage.getItem("coordinator") || "Unknown";
-
+    const coordinator = localStorage.getItem("coordinator") || "Unknown";
 
     // DOM Elements
     const elements = {
@@ -529,12 +528,12 @@
     }
 
     // Authentication check
-  function checkAuth() {
-  if (!sessionStorage.getItem("coordinator")) {
-    alert("Unauthorized access. Please login first.");
-    window.location.href = "login.html";
-  }
-}
+    function checkAuth() {
+      if (!localStorage.getItem("coordinator")) {
+        alert("Unauthorized access. Please login first.");
+        window.location.href = "login.html";
+      }
+    }
 
     // Load available sheets from backend
     function loadSheets() {
@@ -889,10 +888,8 @@
       }
       
       // Clear storage and redirect
-// Clear storage and redirect
-sessionStorage.removeItem("coordinator");
-window.location.href = "login.html";
-
+      localStorage.removeItem("coordinator");
+      window.location.href = "login.html";
     }
 
     // Handle beforeunload
