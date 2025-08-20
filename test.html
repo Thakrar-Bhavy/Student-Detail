@@ -432,86 +432,47 @@
       elements.startScannerBtn.disabled = true;
       
       // Optimized Quagga configuration for performance
-      Quagga.init({
-        inputStream: {
-          name: "Live",
-          type: "LiveStream",
-          target: elements.scanner,
-          constraints: {
-  facingMode: "environment"
-}
-        },
-        locator: {
-          patchSize: "medium",
-          halfSample: true
-        },
-        decoder: {
-          readers: ["code_128_reader"]
-        },
-        locate: true,
-        frequency: 15  // Higher frequency for faster processing
-      }, function(err) {
-        if (err) {
-          console.error("Scanner initialization error:", err);
-          elements.scannerStatus.textContent = "Error: " + err.message;
-          showOutput("Scanner failed to start: " + err.message, "error");
-          elements.startScannerBtn.disabled = false;
-          return;
-        }
-        
-        scannerActive = true;
-        elements.scannerStatus.textContent = "Active - Point at barcode";
-        elements.stopScannerBtn.disabled = false;
-        Quagga.start();
-        
-        // Optimized frame processing with requestAnimationFrame
-        function processFrame() {
-          if (!scannerActive) return;
-          
-          if (!processingFrame) {
-            processingFrame = true;
-            try {
-              const canvas = Quagga.canvas.dom.image;
-              if (canvas && canvas.width > 0 && canvas.height > 0) {
-                const ctx = canvas.getContext('2d');
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                
-                if (window.Worker && scanWorker) {
-                  // Send to web worker for processing
-                  scanWorker.postMessage({
-                    imageData: imageData,
-                    width: canvas.width,
-                    height: canvas.height
-                  });
-                } else {
-                  // Fallback to main thread processing
-                  Quagga.onDetected(function(result) {
-                    if (!scannerActive) return;
-                    const code = result.codeResult.code;
-                    if (code === lastScanned) return;
-                    
-                    lastScanned = code;
-                    processScan(code);
-                    
-                    // Prevent rapid duplicate scans
-                    setTimeout(() => { lastScanned = ""; }, 500);
-                  });
-                }
-              }
-            } catch (e) {
-              console.error("Frame processing error:", e);
-              processingFrame = false;
-            }
-          }
-          
-          if (scannerActive) {
-            requestAnimationFrame(processFrame);
-          }
-        }
-        
-        // Start processing frames
-        requestAnimationFrame(processFrame);
-      });
+     Quagga.init({
+  inputStream: {
+    name: "Live",
+    type: "LiveStream",
+    target: elements.scanner,
+    constraints: {
+      facingMode: "environment"
+    }
+  },
+  decoder: {
+    readers: ["code_128_reader"] // good for student barcodes
+  },
+  locate: true
+}, function(err) {
+  if (err) {
+    console.error(err);
+    elements.scannerStatus.textContent = "Error: " + err.message;
+    return;
+  }
+
+  Quagga.start();
+  scannerActive = true;
+  elements.scannerStatus.textContent = "Active - Point at barcode";
+  elements.startScannerBtn.disabled = true;
+  elements.stopScannerBtn.disabled = false;
+
+  // 🚀 FAST direct detection
+  Quagga.onDetected(function(result) {
+    if (!scannerActive) return;
+    const code = result.codeResult.code;
+
+    if (code && code !== lastScanned) {
+      lastScanned = code;
+      processScan(code);
+
+      // prevent duplicate same-barcode spam
+      setTimeout(() => { lastScanned = ""; }, 500);
+    }
+  });
+});
+
     }
 
     // Stop the scanner
