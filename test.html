@@ -84,6 +84,12 @@
       border: 1px solid #ddd;
       font-size: 15px;
     }
+    #scanner video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important; /* show full camera without zoom */
+}
+
     
     button {
       background: var(--primary);
@@ -432,10 +438,8 @@
           type: "LiveStream",
           target: elements.scanner,
           constraints: {
-            facingMode: "environment",
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
+  facingMode: "environment"
+}
         },
         locator: {
           patchSize: "medium",
