@@ -1,913 +1,313 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Coordinator Panel | Attendance Tracker</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-  <style>
-    :root {
-      --primary: #4361ee;
-      --success: #4cc9f0;
-      --warning: #f8961e;
-      --danger: #f72585;
-      --light: #f8f9fa;
-      --dark: #212529;
-      --dark-gray: #6c757d;
-    }
-    
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Poppins', sans-serif;
-    }
-    
-    body {
-      background: #f5f7fa;
-      color: var(--dark);
-      padding: 20px;
-      line-height: 1.6;
-    }
-    
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: white;
-      padding: 25px;
-      border-radius: 12px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    }
-    
-    h1 {
-      color: var(--primary);
-      text-align: center;
-      margin-bottom: 20px;
-      font-size: 28px;
-    }
-    
-    .status-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding: 10px 15px;
-      background: var(--light);
-      border-radius: 8px;
-      font-size: 14px;
-    }
-    
-    .online-status {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    
-    .online { color: var(--success); }
-    .offline { color: var(--danger); }
-    
-    .pending-badge {
-      background: var(--warning);
-      color: white;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 12px;
-    }
-    
-    select, input, button {
-      width: 100%;
-      padding: 12px 15px;
-      margin: 8px 0;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      font-size: 15px;
-    }
-    #scanner video {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: contain !important; /* show full camera without zoom */
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coordinator Panel | Attendance Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<style>
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #6aaaff, #7fd1ae);
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+.container {
+    padding: 15px;
+    max-width: 700px;
+    margin: auto;
+}
+h2 {
+    text-align: center;
+    color: #ffffff;
+    margin-top: 15px;
+    margin-bottom: 20px;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+}
+#scanner {
+    width: 100%;
+    height: 250px;
+    border: 3px solid #ffffff;
+    border-radius: 12px;
+    background: #f1f1f1;
+    overflow: hidden;
+    margin-bottom: 15px;
+}
+#output {
+    text-align: center;
+    font-weight: bold;
+    color: #28a745;
+    margin-bottom: 10px;
+}
+#manualForm input {
+    font-size: 14px;
+}
+#manualResult {
+    font-weight: bold;
+    margin-top: 5px;
+}
+#netStatus {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #ffffff;
+}
+#pendingCount {
+    text-align: center;
+    background-color: rgb(214, 156, 11);
+    font-weight: bold;
+    color: rgb(20, 20, 255);
+    margin-bottom: 10px;
+}
+button, select, input[type="file"] {
+    font-size: 14px;
+    padding: 6px 10px;
+    border-radius: 6px;
+}
+.btn-custom {
+    background: #007bff;
+    color: white;
+}
+.btn-custom:hover {
+    background: #0056b3;
+}
+.btn-success-custom {
+    background: #28a745;
+    color: white;
+}
+.btn-success-custom:hover {
+    background: #218838;
+}
+.hidden { display: none; }
+#remarksInput {
+  font-size: 14px;
+}
+#presentCount {text-align: center;
+    background-color: rgb(214, 156, 11);
+    font-weight: bold;
+    color: rgb(20, 20, 255);
+    margin-bottom: 10px;
 }
 
-    
-    button {
-      background: var(--primary);
-      color: white;
-      border: none;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    
-    button:hover {
-      opacity: 0.9;
-      transform: translateY(-1px);
-    }
-    
-    button:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-    
-    .section {
-      margin: 25px 0;
-      padding: 20px;
-      border: 1px solid #eee;
-      border-radius: 8px;
-    }
-    
-    .section-title {
-      font-size: 18px;
-      margin-bottom: 15px;
-      color: var(--primary);
-    }
-    
-    #scanner {
-      width: 100%;
-      height: 300px;
-      background: black;
-      margin: 15px 0;
-      border-radius: 8px;
-      overflow: hidden;
-      position: relative;
-    }
-    
-    .scanner-guide {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 80%;
-      height: 150px;
-      border: 2px solid var(--success);
-      border-radius: 8px;
-      box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.3);
-      z-index: 10;
-      pointer-events: none;
-    }
-    
-    .scanner-line {
-      position: absolute;
-      height: 2px;
-      width: 100%;
-      background: var(--success);
-      top: 50%;
-      animation: scanLine 2s infinite ease-in-out;
-    }
-    
-    @keyframes scanLine {
-      0%, 100% { top: 10%; }
-      50% { top: 90%; }
-    }
-    
-    #output {
-      text-align: center;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 8px;
-    }
-    
-    .success { background: #e6ffed; color: #22863a; }
-    .warning { background: #fff5b1; color: #735c0f; }
-    .error { background: #ffeaea; color: #cb2431; }
-    
-    .hidden { display: none; }
-    
-    #manualForm {
-      margin-top: 15px;
-    }
-    
-    #summary {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 20px;
-    }
-    
-    .summary-card {
-      padding: 15px;
-      border-radius: 8px;
-      text-align: center;
-      background: var(--light);
-    }
-    
-    .summary-value {
-      font-size: 24px;
-      font-weight: 600;
-      margin: 5px 0;
-    }
-    
-    .scanner-controls {
-      display: flex;
-      gap: 10px;
-      margin: 10px 0;
-    }
-    
-    .scanner-controls button {
-      width: auto;
-      flex: 1;
-    }
-    
-    .performance-info {
-      font-size: 12px;
-      color: var(--dark-gray);
-      text-align: center;
-      margin-top: 5px;
-    }
-    
-    @media (max-width: 600px) {
-      .container {
-        padding: 15px;
-      }
-      
-      #summary {
-        grid-template-columns: 1fr;
-      }
-      
-      .scanner-controls {
-        flex-direction: column;
-      }
-    }
-  </style>
+</style>
 </head>
 <body>
-  <div class="container">
-    <h1>📋 Coordinator Attendance Panel</h1>
-    
-    <div class="status-bar">
-      <div class="online-status">
-        <span id="netStatusIcon">🟢</span>
-        <span id="netStatusText">Online</span>
-      </div>
-      <div id="pendingStatus" class="hidden">
-        <span class="pending-badge" id="pendingCount">0</span> pending sync
-      </div>
-      <button onclick="logout()" style="width: auto; padding: 8px 15px;">Logout</button>
-    </div>
-    
-    <div id="setupSection">
-  <div class="section">
-    <div class="section-title">1. Select Session</div>
-    <select id="sheetDropdown">
-      <option value="" disabled selected>Select Session Sheet</option>
-    </select>
-  </div>
 
-  <div class="section">
-    <div class="section-title">2. Upload Student List</div>
-    <input type="file" id="fileInput" accept=".xlsx,.xls" />
-    <div id="fileInfo" class="hidden"></div>
-  </div>
+<div class="container">
+<h2>📋  Attendance Panel</h2>
+<div id="netStatus">🟢 Online</div>
+<div id="presentCount" class="text-center fw-bold mb-2">Present: 0</div>
+<div id="pendingCount"></div>
+
+<div class="mb-2">
+<select id="sheetDropdown" class="form-select">
+  <option value="" disabled selected>Select Session Sheet</option>
+</select>
 </div>
 
-    
-    <div class="section">
-      <div class="section-title">3. Take Attendance</div>
-      
-      <div class="scanner-controls">
-        <button id="startScannerBtn" onclick="initScanner()">Start Scanner</button>
-        <button id="stopScannerBtn" onclick="stopScanner()" disabled>Stop Scanner</button>
-      </div>
-      
-      <div id="scanner">
-        <div class="scanner-guide">
-          <div class="scanner-line"></div>
-        </div>
-      </div>
-      
-      <div class="performance-info">
-        Scanner status: <span id="scannerStatus">Not initialized</span>
-      </div>
-      
-      <div id="output"></div>
-      
-      <button onclick="toggleManualForm()">📝 Manual Attendance Entry</button>
-      <div id="manualForm" class="hidden">
-        <input type="number" pattern="[0-9]*" inputmode="numeric" id="manualEnroll" placeholder="Enter Enrollment Number">
-        <button onclick="submitManual()">Submit Attendance</button>
-        <div id="manualResult"></div>
-      </div>
-    </div>
-    
-    <div class="section">
-      <div class="section-title">Attendance Summary</div>
-      <div id="summary">
-        <div class="summary-card">
-          <div>Present</div>
-          <div class="summary-value" id="presentCount">0</div>
-        </div>
-        <div class="summary-card">
-          <div>Absent</div>
-          <div class="summary-value" id="absentCount">0</div>
-        </div>
-        <div class="summary-card">
-          <div>Percentage</div>
-          <div class="summary-value" id="percentage">0%</div>
-        </div>
-      </div>
-      <button id="downloadBtn" onclick="downloadAttendance()" class="hidden" style="margin-top: 20px;">
-        📥 Download Attendance Report
-      </button>
-      <button id="showSetupBtn" onclick="showSetupSections()">
-        ⚙️ Re Upload Sheet Or Select Google Sheet
-      </button>
-    </div>
-  </div>
+<div id="scanner"></div>
+<div id="output"></div>
 
-  <audio id="successSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3" preload="auto"></audio>
-  <audio id="errorSound" src="https://www.soundjay.com/buttons/sounds/button-5.mp3" preload="auto"></audio>
+<div class="d-flex justify-content-between mb-2">
+    <button class="btn btn-success btn-sm flex-fill me-1" onclick="toggleManualForm()">Manual Attendance</button>
+    <button class="btn btn-primary btn-sm flex-fill ms-1" onclick="downloadLocalAttendance()">Download Marked Students</button>
+</div>
 
-  <script>
-    // Configuration
-    const scriptURL = "https://script.google.com/macros/s/AKfycbxUiBrtS28YFCfkWbU2-gb570O4KcwmqlbUtOt01FnAsUEBqQeS_Bu7ZEfDKdy0ImH_/exec";
-    let students = {};
-    let attendance = {};
-    let methodMap = {};
-    let pendingQueue = [];
-    let sheetName = "";
-    let lastScanned = "";
-    let scannerActive = false;
-    let scanWorker = null;
-    let processingFrame = false;
-    const coordinator = localStorage.getItem("coordinator") || "Unknown";
 
-    // DOM Elements
-    const elements = {
-      sheetDropdown: document.getElementById("sheetDropdown"),
-      fileInput: document.getElementById("fileInput"),
-      fileInfo: document.getElementById("fileInfo"),
-      scanner: document.getElementById("scanner"),
-      output: document.getElementById("output"),
-      manualForm: document.getElementById("manualForm"),
-      manualEnroll: document.getElementById("manualEnroll"),
-      manualResult: document.getElementById("manualResult"),
-      downloadBtn: document.getElementById("downloadBtn"),
-      netStatusIcon: document.getElementById("netStatusIcon"),
-      netStatusText: document.getElementById("netStatusText"),
-      pendingStatus: document.getElementById("pendingStatus"),
-      pendingCount: document.getElementById("pendingCount"),
-      presentCount: document.getElementById("presentCount"),
-      absentCount: document.getElementById("absentCount"),
-      percentage: document.getElementById("percentage"),
-      successSound: document.getElementById("successSound"),
-      errorSound: document.getElementById("errorSound"),
-      scannerStatus: document.getElementById("scannerStatus"),
-      startScannerBtn: document.getElementById("startScannerBtn"),
-      stopScannerBtn: document.getElementById("stopScannerBtn")
-    };
+<div id="manualForm" class="hidden mb-2">
+  <input type="text" id="manualEnroll" class="form-control mb-1" placeholder="Enter Enrollment No">
+  <button class="btn btn-success btn-sm w-100" onclick="submitManual()">Submit</button>
+  <div id="manualResult"></div>
+</div>
 
-    // Initialize on load
-    window.onload = function() {
-      checkAuth();
-      loadSheets();
-      checkPendingRecords();
-      updateNetworkStatus();
-      
-      // Event listeners
-      window.addEventListener('online', updateNetworkStatus);
-      window.addEventListener('offline', updateNetworkStatus);
-      
-      elements.sheetDropdown.addEventListener('change', function(e) {
-        sheetName = e.target.value;
-        resetAttendanceData();
-        checkSetupStatus();
+<audio id="successSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3" preload="auto"></audio>
+</div>
+
+<script>
+
+function updatePresentCount() {
+  if (!sheetName) return;
+  fetch(`${scriptURL}?action=getPresentCount&Sheet=${encodeURIComponent(sheetName)}`)
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("presentCount").textContent = `Present: ${data.count}`;
+    })
+    .catch(err => console.error("Error fetching present count:", err));
+}
+setInterval(updatePresentCount, 1000); // update every 1 seconds
+
+
+
+if (!localStorage.getItem("coordinator")) {
+  alert("Unauthorized access. Please login first.");
+  window.location.href = "login.html";
+}
+
+let sheetName = "", coordinator = localStorage.getItem("coordinator");
+let lastScanned = "", pendingQueue = [], allEnrollments = {}, localMarked = JSON.parse(localStorage.getItem("localMarked")) || [];
+const scriptURL = "https://script.google.com/macros/s/AKfycbwkpA1BWvUNZhnJHYUB5s87RjiFJP7tzRp2OL-O1DceBpxLP1digI_ieJxwp3I8yj5c/exec"; 
+
+window.addEventListener('online', () => updateStatus(true));
+window.addEventListener('offline', () => updateStatus(false));
+
+function updateStatus(online) {
+  document.getElementById("netStatus").textContent = online ? "🟢 Online" : "🔴 Offline";
+  updatePendingCount();
+}
+
+function logout() {
+  localStorage.clear();
+  window.location.href = "login.html";
+}
+
+window.onload = function() {
+  fetch(`${scriptURL}?action=getSheets`)
+    .then(res => res.json())
+    .then(data => {
+      const dropdown = document.getElementById("sheetDropdown");
+      data.sheets.forEach(sheet => {
+        const opt = document.createElement("option");
+        opt.value = sheet;
+        opt.textContent = sheet;
+        dropdown.appendChild(opt);
       });
-      
-      elements.fileInput.addEventListener('change', handleFileUpload);
-      
-      // Start processing queue every 5 seconds
-      setInterval(processPendingQueue, 5000);
-      
-      // Initialize web worker for barcode scanning
-      setupScanWorker();
-    };
+    });
+  const saved = localStorage.getItem("pendingAttendance");
+  if (saved) pendingQueue = JSON.parse(saved);
+  updatePendingCount();
+}
 
-    // Setup web worker for barcode processing
-    function setupScanWorker() {
-      if (window.Worker) {
-        // Create a blob URL for the worker code
-        const workerBlob = new Blob([`
-          self.addEventListener('message', function(e) {
-            const { imageData, width, height } = e.data;
-            
-            // Simulate Quagga decoding in worker
-            // In a real implementation, you would use Quagga.js here
-            // but it's not worker-friendly by default
-            
-            // For demonstration, we'll just send back a mock result occasionally
-            if (Math.random() < 0.05) {
-              self.postMessage({
-                code: 'TEST' + Math.floor(Math.random() * 1000),
-                found: true
-              });
-            } else {
-              self.postMessage({ found: false });
-            }
-          });
-        `], { type: 'application/javascript' });
-        
-        scanWorker = new Worker(URL.createObjectURL(workerBlob));
-        
-        scanWorker.onmessage = function(e) {
-          processingFrame = false;
-          if (e.data.found && scannerActive) {
-            processScan(e.data.code);
-          }
-        };
-      } else {
-        console.warn("Web Workers not supported, falling back to main thread processing");
-      }
-    }
+document.getElementById("sheetDropdown").addEventListener("change", e => {
+  sheetName = e.target.value;
+  loadAllEnrollments(sheetName);
+  startScanner();
+});
 
-    // Initialize the barcode scanner with optimized settings
-    function initScanner() {
-      if (scannerActive || !sheetName || Object.keys(students).length === 0) {
-        if (!sheetName) showOutput("Please select a sheet first", "error");
-        else if (Object.keys(students).length === 0) showOutput("Please upload student list first", "error");
-        return;
+function loadAllEnrollments(sheet) {
+  fetch(`${scriptURL}?action=getAllEnrollments&Sheet=${encodeURIComponent(sheet)}`)
+    .then(res => res.json())
+    .then(data => {
+      allEnrollments = {};
+      data.enrollments.forEach(item => {
+        allEnrollments[item.EnrollmentNo.trim()] = item.row;
+      });
+    });
+}
+
+function startScanner() {
+  if (!sheetName) return;
+  if (Quagga.initialized) return;
+
+  Quagga.init({
+    inputStream: {
+      name: "Live",
+      type: "LiveStream",
+      target: document.querySelector('#scanner'),
+      constraints: {
+        facingMode: { ideal: "environment" },
+          width: { ideal: 1920 },   // Full HD
+    height: { ideal: 1080 },  // Full HD
+
       }
-      
-      elements.scannerStatus.textContent = "Initializing...";
-      elements.startScannerBtn.disabled = true;
-      
-      // Optimized Quagga configuration for performance
-     Quagga.init({
-  inputStream: {
-    name: "Live",
-    type: "LiveStream",
-    target: elements.scanner,
-    constraints: {
-      facingMode: "environment"
-    }
-  },
-  decoder: {
-    readers: ["code_128_reader"] // good for student barcodes
-  },
-  locate: true
-}, function(err) {
-  if (err) {
-    console.error(err);
-    elements.scannerStatus.textContent = "Error: " + err.message;
+    },
+    locator: { patchSize: "medium", halfSample: false },
+    decoder: { readers: ["code_128_reader"] },
+    locate: true,
+    frequency: 10
+  }, function(err) {
+    if(err) return console.error(err);
+    Quagga.initialized = true;
+    Quagga.start();
+    Quagga.onDetected(onDetected);
+  });
+}
+
+function onDetected(result) {
+  const code = result.codeResult.code;
+  if (code === lastScanned) return;
+  lastScanned = code;
+  markPresent(code, "Scanner");
+  setTimeout(() => lastScanned="", 400);
+}
+
+function toggleManualForm() {
+  const form = document.getElementById("manualForm");
+  form.classList.toggle("hidden");
+  document.getElementById("manualResult").textContent = "";
+  document.getElementById("manualEnroll").value = "";
+}
+
+function submitManual() {
+  const enr = document.getElementById("manualEnroll").value.trim();
+  markPresent(enr, "Manual");
+}
+
+function markPresent(enrollment, method) {
+  const out = document.getElementById("output");
+  const resultEl = document.getElementById("manualResult");
+
+  if (!(enrollment in allEnrollments)) {
+    out.innerHTML = `❌ ${enrollment} not found`;
+    if(resultEl){ resultEl.textContent=``; resultEl.style.color="red";}
     return;
   }
 
-  Quagga.start();
-  scannerActive = true;
-  elements.scannerStatus.textContent = "Active - Point at barcode";
-  elements.startScannerBtn.disabled = true;
-  elements.stopScannerBtn.disabled = false;
+  if (!localMarked.includes(enrollment)) {
+    localMarked.push(enrollment);
+    localStorage.setItem("localMarked", JSON.stringify(localMarked));
+  }
 
-  // 🚀 FAST direct detection
-  Quagga.onDetected(function(result) {
-    if (!scannerActive) return;
-    const code = result.codeResult.code;
+  const data = { EnrollmentNo: enrollment, Method: method, Coordinator: coordinator, Timestamp: new Date().toLocaleString(), Sheet: sheetName };
+  pendingQueue.push(data);
+  localStorage.setItem("pendingAttendance", JSON.stringify(pendingQueue));
+  updatePendingCount();
+  out.innerHTML = `✔ ${enrollment} marked Present (${method})`;
+  if(resultEl){ resultEl.textContent=`✔ ${enrollment} marked Present`; resultEl.style.color="green";}
+  document.getElementById("successSound").play();
+  updatePresentCount();
+}
 
-    if (code && code !== lastScanned) {
-      lastScanned = code;
-      processScan(code);
+function updatePendingCount() {
+  document.getElementById("pendingCount").textContent = `Pending to sync: ${pendingQueue.length}`;
+}
 
-      // prevent duplicate same-barcode spam
-      setTimeout(() => { lastScanned = ""; }, 500);
-    }
-  });
-});
-
-    }
-
-    // Stop the scanner
-    function stopScanner() {
-      if (scannerActive) {
-        Quagga.stop();
-        scannerActive = false;
-        elements.scannerStatus.textContent = "Stopped";
-        elements.startScannerBtn.disabled = false;
-        elements.stopScannerBtn.disabled = true;
-      }
-    }
-
-    // Process scanned barcode
-    function processScan(code) {
-      if (!students[code]) {
-        return;
-      }
-      
-      if (attendance[code] === "Present") {
-        showOutput(`${students[code].first} already marked present`, "warning");
-        elements.errorSound.play();
-        return;
-      }
-      
-      attendance[code] = "Present";
-      methodMap[code] = "Scanner";
-      
-      const student = students[code];
-      const fullName = `${student.first} ${student.last}`.trim();
-      showOutput(`${fullName} (${code}) marked present`, "success");
-      elements.successSound.play();
-      
-      // Prepare data for backend
-      const attendanceData = {
-        SrNo: student.srno,
-        EnrollmentNo: code,
-        FirstName: student.first,
-        MiddleName: student.middle,
-        LastName: student.last,
-        StudentMobNo: student.mobile,
-        EmailId: student.email,
-        CurrentDegree: student.degree,
-        Coordinator: coordinator,
-        Timestamp: new Date().toLocaleString(),
-        Method: "Scanner",
-        Status: "Present",
-        Sheet: sheetName
-      };
-      
-      sendToBackend(attendanceData);
-      updateSummary();
-    }
-
-    // Authentication check
-    function checkAuth() {
-      if (!localStorage.getItem("coordinator")) {
-        alert("Unauthorized access. Please login first.");
-        window.location.href = "login.html";
-      }
-    }
-
-    // Load available sheets from backend
-    function loadSheets() {
-      fetch(`${scriptURL}?action=getSheets`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.sheets && data.sheets.length) {
-            elements.sheetDropdown.innerHTML = '<option value="" disabled selected>Select Session Sheet</option>';
-            data.sheets.forEach(sheet => {
-              const option = document.createElement('option');
-              option.value = sheet;
-              option.textContent = sheet;
-              elements.sheetDropdown.appendChild(option);
-            });
-          } else {
-            showOutput("No sheets available. Please contact admin.", "error");
-          }
-        })
-        .catch(err => {
-          console.error("Error loading sheets:", err);
-          showOutput("Failed to load sheets. Try again later.", "error");
-        });
-    }
-
-    // Handle Excel file upload
-    function handleFileUpload(e) {
-      if (!sheetName) {
-        showOutput("Please select a sheet first", "error");
-        return;
-      }
-      
-      const file = e.target.files[0];
-      if (!file) return;
-      
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          
-          // Dynamic header detection with validation
-          let headerRow = 0;
-          let foundHeader = false;
-          const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-          // Check first 5 rows for enrollment header
-          for (let i = 0; i < Math.min(5, sheetData.length); i++) {
-            const row = sheetData[i].map(cell => String(cell).toLowerCase().trim());
-            
-            if (row.includes('enrollment no') || row.includes('enrollmentno')) {
-              headerRow = i;
-              foundHeader = true;
-              break;
-            }
-          }
-
-          if (!foundHeader) {
-            showOutput("Error: Could not find 'Enrollment No' column in Excel file", "error");
-            return;
-          }
-
-          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { range: headerRow });          
-          students = {};
-          attendance = {};
-          methodMap = {};
-          
-          jsonData.forEach(row => {
-            const enr = String(row['Enrollment No'] || row['EnrollmentNo'] || row[2] || '').trim();
-            if (enr) {
-              students[enr] = {
-                srno: row['Sr.No'] || '',
-                enrollment: enr,
-                first: row['FirstName'] || '',
-                middle: row['MiddleName'] || '',
-                last: row['LastName'] || '',
-                mobile: row['StudentMobNo'] || '',
-                email: row['EmailId'] || '',
-                degree: row['CurrentDegree'] || '',
-              };
-              attendance[enr] = "Absent";
-            }
-          });
-          
-          elements.fileInfo.textContent = `Loaded ${Object.keys(students).length} students`;
-          elements.fileInfo.classList.remove("hidden");
-          elements.downloadBtn.classList.remove("hidden");
-          updateSummary();
-          checkSetupStatus();
-
-        } catch (error) {
-          console.error("Error parsing file:", error);
-          showOutput("Error processing Excel file. Check format.", "error");
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    }
-
-    // Toggle manual attendance form
-    function toggleManualForm() {
-      elements.manualForm.classList.toggle("hidden");
-      elements.manualResult.textContent = "";
-      elements.manualEnroll.value = "";
-      if (!elements.manualForm.classList.contains("hidden")) {
-        elements.manualEnroll.focus();
-      }
-    }
-
-    // Submit manual attendance
-    function submitManual() {
-      const enr = elements.manualEnroll.value.trim();
-      if (!enr) {
-        showManualResult("Please enter enrollment number", "error");
-        return;
-      }
-      
-      if (!students[enr]) {
-        showManualResult("Enrollment not found", "error");
-        return;
-      }
-      
-      if (attendance[enr] === "Present") {
-        showManualResult("Already marked present", "warning");
-        return;
-      }
-      
-      attendance[enr] = "Present";
-      methodMap[enr] = "Manual";
-      
-      const student = students[enr];
-      const fullName = `${student.first} ${student.last}`.trim();
-      showManualResult(`${fullName} marked present`, "success");
-      elements.successSound.play();
-      
-      // Prepare data for backend
-      const attendanceData = {
-        SrNo: student.srno,
-        EnrollmentNo: enr,
-        FirstName: student.first,
-        MiddleName: student.middle,
-        LastName: student.last,
-        StudentMobNo: student.mobile,
-        EmailId: student.email,
-        CurrentDegree: student.degree,
-        Coordinator: coordinator,
-        Timestamp: new Date().toLocaleString(),
-        Method: "Manual",
-        Status: "Present",
-        Sheet: sheetName
-      };
-      
-      sendToBackend(attendanceData);
-      updateSummary();
-      elements.manualEnroll.value = "";
-    }
-
-    // Show manual entry result
-    function showManualResult(message, type) {
-      elements.manualResult.textContent = message;
-      elements.manualResult.className = type;
-    }
-
-    // Send attendance data to backend
-    function sendToBackend(data) {
-      if (!navigator.onLine) {
-        enqueuePending(data);
-        return;
-      }
-      
-      fetch(scriptURL, {
-        method: "POST",
-        body: buildFormData(data)
-      })
-      .then(response => {
-        if (!response.ok) throw new Error("Network error");
-        return response.json();
-      })
-      .then(data => {
-        if (data.success) {
-          console.log("Attendance recorded successfully");
-        } else {
-          throw new Error(data.message || "Server error");
-        }
-      })
-      .catch(error => {
-        console.error("Error submitting attendance:", error);
-        enqueuePending(data);
-      });
-    }
-
-    // Build FormData from object
-    function buildFormData(obj) {
-      const formData = new FormData();
-      for (const key in obj) {
-        formData.append(key, obj[key]);
-      }
-      return formData;
-    }
-
-    // Handle offline data
-    function enqueuePending(data) {
-      pendingQueue.push(data);
+setInterval(() => {
+  if (navigator.onLine && pendingQueue.length>0) {
+    const batch = pendingQueue.splice(0,10);
+    const promises = batch.map(data => fetch(`${scriptURL}?action=markPresent`, { method:"POST", body:buildFormData(data) }).then(res=>res.json()));
+    Promise.all(promises).then(results => {
+      pendingQueue = pendingQueue.concat(batch.filter((_,i)=>results[i].status!=="success"));
       localStorage.setItem("pendingAttendance", JSON.stringify(pendingQueue));
-      updatePendingStatus();
-      showOutput("Saved locally (will sync when online)", "warning");
-    }
+      updatePendingCount();
+    }).catch(()=>{ pendingQueue = batch.concat(pendingQueue); localStorage.setItem("pendingAttendance", JSON.stringify(pendingQueue)); });
+  }
+}, 2000);
 
-    // Process pending queue when online
-    function processPendingQueue() {
-      if (!navigator.onLine || pendingQueue.length === 0) return;
-      
-      // Send all pending records at once
-      fetch(scriptURL, {
-        method: "POST",
-        body: buildFormData({ 
-          action: "batchRecord",
-          records: JSON.stringify(pendingQueue)
-        })
-      })
-      .then(response => {
-        if (!response.ok) throw new Error("Network error");
-        return response.json();
-      })
-      .then(data => {
-        if (data.success) {
-          pendingQueue = [];
-          localStorage.removeItem("pendingAttendance");
-          updatePendingStatus();
-          showOutput(`Synced ${data.count} pending records`, "success");
-        } else {
-          throw new Error(data.message || "Server error");
-        }
-      })
-      .catch(error => {
-        console.error("Error syncing pending records:", error);
-      });
-    }
+function buildFormData(obj) {
+  const fd = new FormData();
+  Object.entries(obj).forEach(([k,v])=>fd.append(k,v));
+  return fd;
+}
 
-    // Check for pending records on load
-    function checkPendingRecords() {
-      const saved = localStorage.getItem("pendingAttendance");
-      if (saved) {
-        pendingQueue = JSON.parse(saved);
-        updatePendingStatus();
-      }
-    }
+function downloadLocalAttendance() {
+  if(localMarked.length === 0) return alert("No marked students to download.");
+  const blob = new Blob([localMarked.join("\n")], {type: "text/plain"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Marked_Students_${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
-    // Update pending records display
-    function updatePendingStatus() {
-      if (pendingQueue.length > 0) {
-        elements.pendingStatus.classList.remove("hidden");
-        elements.pendingCount.textContent = pendingQueue.length;
-      } else {
-        elements.pendingStatus.classList.add("hidden");
-      }
-    }
+window.addEventListener("beforeunload", function(e){
+  e.preventDefault();
+  e.returnValue = "Are you sure you want to leave? Attendance data might be lost.";
+});
+</script>
 
-    // Update attendance summary
-    function updateSummary() {
-      const total = Object.keys(attendance).length;
-      const present = Object.values(attendance).filter(v => v === "Present").length;
-      const absent = total - present;
-      const percent = total > 0 ? Math.round((present / total) * 100) : 0;
-      
-      elements.presentCount.textContent = present;
-      elements.absentCount.textContent = absent;
-      elements.percentage.textContent = `${percent}%`;
-    }
-
-    // Show output message
-    function showOutput(message, type) {
-      elements.output.textContent = message;
-      elements.output.className = type;
-      
-      // Auto-hide after 5 seconds
-      setTimeout(() => {
-        elements.output.textContent = "";
-        elements.output.className = "";
-      }, 5000);
-    }
-
-    // Download attendance report
-    function downloadAttendance() {
-      const data = Object.keys(attendance).map(enr => {
-        const s = students[enr];
-        return {
-          SrNo: s.srno,
-          EnrollmentNo: enr,
-          FirstName: s.first,
-          MiddleName: s.middle,
-          LastName: s.last,
-          StudentMobNo: s.mobile,
-          EmailId: s.email,
-          CurrentDegree: s.degree,
-          Coordinator: coordinator,
-          Timestamp: new Date().toLocaleString(),
-          Method: methodMap[enr] || "",
-          Status: attendance[enr]
-        };
-      });
-      
-      const ws = XLSX.utils.json_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Attendance");
-      
-      const dateStr = new Date().toISOString().split('T')[0];
-      XLSX.writeFile(wb, `Attendance_${sheetName}_${dateStr}.xlsx`);
-    }
-
-    // Reset attendance data
-    function resetAttendanceData() {
-      if (Object.keys(students).length > 0) {
-        for (const enr in attendance) {
-          attendance[enr] = "Absent";
-          delete methodMap[enr];
-        }
-        updateSummary();
-      }
-    }
-
-    // Update network status
-    function updateNetworkStatus() {
-      const online = navigator.onLine;
-      elements.netStatusIcon.textContent = online ? "🟢" : "🔴";
-      elements.netStatusText.textContent = online ? "Online" : "Offline";
-    }
-
-    // Check setup status
-        function checkSetupStatus() {
-          const setupComplete = sheetName && Object.keys(students).length > 0;
-          document.getElementById("setupSection").style.display = setupComplete ? "none" : "block";
-          elements.startScannerBtn.disabled = !setupComplete;
-        }
-
-
-    // Show setup sections
-    function showSetupSections() {
-      // This would show the hidden setup sections
-      // Implementation depends on your specific UI needs
-    }
-
-    // Logout
-    function logout() {
-      // Stop scanner if active
-      if (scannerActive) {
-        stopScanner();
-      }
-      
-      // Clean up worker
-      if (scanWorker) {
-        scanWorker.terminate();
-      }
-      
-      // Clear storage and redirect
-      localStorage.removeItem("coordinator");
-      window.location.href = "login.html";
-    }
-
-    // Handle beforeunload
-    window.addEventListener("beforeunload", function(e) {
-      if (pendingQueue.length > 0) {
-        e.preventDefault();
-        e.returnValue = "You have unsynced attendance records. Are you sure you want to leave?";
-      }
-      
-      // Clean up resources
-      if (scannerActive) {
-        Quagga.stop();
-      }
-      
-      if (scanWorker) {
-        scanWorker.terminate();
-      }
-    });
-  </script>
 </body>
 </html>
