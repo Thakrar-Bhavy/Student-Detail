@@ -297,7 +297,7 @@
             position: relative;
             overflow: hidden;
             background: #000;
-            min-height: 0;
+            min-height: 0; /* For flex child */
         }
         
         #cameraView {
@@ -317,103 +317,179 @@
             align-items: center;
             justify-content: center;
             pointer-events: none;
+            z-index: 10;
         }
         
         .scan-frame {
             width: 85%;
             max-width: 280px;
-            height: 160px;
+            height: 180px;
             border: 2px solid var(--primary-blue);
             border-radius: 12px;
             position: relative;
-            box-shadow: 0 0 20px rgba(33, 150, 243, 0.3);
+            box-shadow: 0 0 30px rgba(33, 150, 243, 0.4);
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(2px);
         }
         
         .scan-line {
             position: absolute;
             width: 100%;
-            height: 2px;
-            background: var(--primary-blue);
+            height: 3px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                var(--primary-blue) 20%, 
+                var(--primary-blue) 80%, 
+                transparent 100%);
             top: 50%;
-            animation: scan 2s ease-in-out infinite;
-            box-shadow: 0 0 8px rgba(33, 150, 243, 0.8);
+            animation: scan 2.5s ease-in-out infinite;
+            box-shadow: 0 0 15px rgba(33, 150, 243, 0.9);
+            border-radius: 2px;
+        }
+        
+        .scan-corner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-color: var(--primary-blue);
+            border-width: 3px;
+        }
+        
+        .scan-corner.tl {
+            top: -3px;
+            left: -3px;
+            border-top-style: solid;
+            border-left-style: solid;
+            border-right: none;
+            border-bottom: none;
+        }
+        
+        .scan-corner.tr {
+            top: -3px;
+            right: -3px;
+            border-top-style: solid;
+            border-right-style: solid;
+            border-left: none;
+            border-bottom: none;
+        }
+        
+        .scan-corner.bl {
+            bottom: -3px;
+            left: -3px;
+            border-bottom-style: solid;
+            border-left-style: solid;
+            border-top: none;
+            border-right: none;
+        }
+        
+        .scan-corner.br {
+            bottom: -3px;
+            right: -3px;
+            border-bottom-style: solid;
+            border-right-style: solid;
+            border-top: none;
+            border-left: none;
         }
         
         @keyframes scan {
-            0%, 100% { top: 10%; }
-            50% { top: 90%; }
+            0%, 100% { 
+                top: 10%; 
+                opacity: 0.8;
+            }
+            25% {
+                opacity: 1;
+            }
+            50% { 
+                top: 90%; 
+                opacity: 0.8;
+            }
+            75% {
+                opacity: 1;
+            }
         }
         
-        /* Camera Controls Overlay */
-        .camera-controls-overlay {
+        .scan-hint {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 10;
-        }
-        
-        .camera-control-btn {
-            background: rgba(0, 0, 0, 0.7);
-            border: none;
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
             color: white;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
+            font-size: 13px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 16px;
             backdrop-filter: blur(5px);
-            transition: all 0.2s ease;
+            z-index: 15;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .camera-control-btn:active {
-            transform: scale(0.9);
-            background: rgba(0, 0, 0, 0.9);
+        .scan-hint i {
+            margin-right: 8px;
+            color: var(--primary-blue);
         }
         
-        .camera-control-btn.active {
-            background: var(--primary-blue);
-        }
-        
-        /* Light Level Indicator */
-        .light-indicator {
+        /* Camera Optimizer */
+        .camera-optimizer {
             position: absolute;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            z-index: 15;
+            padding: 0 16px;
+        }
+        
+        .optimizer-status {
+            display: inline-block;
             background: rgba(0, 0, 0, 0.7);
             color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .optimizer-status i {
+            margin-right: 6px;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+        
+        /* Low Light Warning */
+        .low-light-warning {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            z-index: 15;
+            padding: 0 16px;
+            animation: fadeInOut 3s ease-in-out;
+        }
+        
+        .low-light-alert {
+            display: inline-block;
+            background: rgba(255, 152, 0, 0.2);
+            color: #ff9800;
             padding: 8px 16px;
             border-radius: 20px;
             font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
             backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 152, 0, 0.3);
         }
         
-        .light-level-bar {
-            width: 60px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 2px;
-            overflow: hidden;
+        .low-light-alert i {
+            margin-right: 6px;
         }
         
-        .light-level-fill {
-            height: 100%;
-            background: var(--primary-blue);
-            transition: width 0.3s ease;
-        }
-        
-        .light-indicator.low-light {
-            background: rgba(255, 152, 0, 0.7);
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; transform: translateY(-10px); }
+            10%, 90% { opacity: 1; transform: translateY(0); }
         }
         
         /* Scanner Controls */
@@ -426,6 +502,7 @@
             gap: 12px;
             align-items: center;
             padding-bottom: calc(16px + var(--safe-area-inset-bottom));
+            z-index: 20;
         }
         
         .control-btn {
@@ -444,6 +521,7 @@
             justify-content: center;
             transition: all 0.2s ease;
             touch-action: manipulation;
+            position: relative;
         }
         
         .control-btn:active {
@@ -454,6 +532,23 @@
         .flash-btn.active {
             background: rgba(255, 255, 255, 0.3);
             color: #ffd700;
+        }
+        
+        .control-btn.badge::after {
+            content: '';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 8px;
+            height: 8px;
+            background: var(--primary-blue);
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
         }
         
         /* Scan Result Modal */
@@ -472,7 +567,7 @@
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
             padding: 20px;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(10px);
         }
         
         .result-modal.active {
@@ -592,7 +687,7 @@
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(10px);
         }
         
         .loading-overlay.active {
@@ -743,7 +838,7 @@
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
             padding: 20px;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(10px);
         }
         
         .manual-input-modal.active {
@@ -815,38 +910,6 @@
             opacity: 0.9;
         }
         
-        /* Scanner Mode Selector */
-        .scanner-mode-selector {
-            position: absolute;
-            bottom: 80px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 20px;
-            padding: 8px;
-            display: flex;
-            gap: 8px;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .scanner-mode-btn {
-            background: transparent;
-            border: none;
-            color: rgba(255, 255, 255, 0.6);
-            padding: 8px 12px;
-            border-radius: 16px;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            white-space: nowrap;
-        }
-        
-        .scanner-mode-btn.active {
-            background: var(--primary-blue);
-            color: white;
-        }
-        
         /* Very small screens */
         @media (max-width: 350px) {
             .header {
@@ -880,17 +943,11 @@
             }
             
             .scan-frame {
-                height: 140px;
+                height: 150px;
             }
             
             .control-btn {
                 max-width: 46px;
-                font-size: 16px;
-            }
-            
-            .camera-control-btn {
-                width: 36px;
-                height: 36px;
                 font-size: 16px;
             }
         }
@@ -951,39 +1008,16 @@
                 font-size: 24px;
                 margin-top: 10px;
             }
-            
-            .camera-controls-overlay {
-                top: 5px;
-                right: 5px;
-            }
-            
-            .scanner-mode-selector {
-                bottom: 60px;
-                left: 5px;
-            }
-            
-            .light-indicator {
-                bottom: 60px;
-                right: 5px;
-                left: auto;
-                transform: none;
-            }
         }
         
         /* Tall screens (iPhone X and similar) */
         @media (min-height: 800px) {
             .scan-frame {
-                height: 180px;
+                height: 200px;
             }
             
             .control-btn {
                 max-width: 56px;
-                font-size: 20px;
-            }
-            
-            .camera-control-btn {
-                width: 48px;
-                height: 48px;
                 font-size: 20px;
             }
         }
@@ -1033,7 +1067,7 @@
         <div class="manual-input-card">
             <h2 class="manual-input-title">Manual Entry</h2>
             <input type="text" class="manual-input-field" id="manualInputField" 
-                   placeholder="Enter enrollment number" inputmode="numeric" pattern="[0-9]*">
+                   placeholder="Enter enrollment number" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
             <div class="manual-input-buttons">
                 <button class="manual-input-btn secondary" onclick="closeManualInput()">Cancel</button>
                 <button class="manual-input-btn primary" onclick="submitManualInput()">Submit</button>
@@ -1095,39 +1129,37 @@
             <div class="camera-container">
                 <video id="cameraView" playsinline autoplay></video>
                 
-                <!-- Camera Controls Overlay -->
-                <div class="camera-controls-overlay">
-                    <button class="camera-control-btn" id="autoFocusBtn" onclick="toggleAutoFocus()">
-                        <i class="fas fa-crosshairs"></i>
-                    </button>
-                    <button class="camera-control-btn" id="autoExposureBtn" onclick="toggleAutoExposure()">
-                        <i class="fas fa-sun"></i>
-                    </button>
-                    <button class="camera-control-btn" id="imageEnhanceBtn" onclick="toggleImageEnhance()">
-                        <i class="fas fa-magic"></i>
-                    </button>
+                <!-- Camera Optimizer Status -->
+                <div class="camera-optimizer" id="cameraOptimizer">
+                    <div class="optimizer-status" id="optimizerStatus">
+                        <i class="fas fa-cog"></i>
+                        <span>Optimizing camera...</span>
+                    </div>
                 </div>
                 
-                <!-- Scanner Mode Selector -->
-                <div class="scanner-mode-selector">
-                    <button class="scanner-mode-btn active" data-mode="1d">1D Barcodes</button>
-                    <button class="scanner-mode-btn" data-mode="2d">2D Barcodes</button>
-                    <button class="scanner-mode-btn" data-mode="both">Both</button>
-                </div>
-                
-                <!-- Light Level Indicator -->
-                <div class="light-indicator" id="lightIndicator">
-                    <i class="fas fa-lightbulb"></i>
-                    <div class="light-level-bar">
-                        <div class="light-level-fill" id="lightLevelFill"></div>
+                <!-- Low Light Warning -->
+                <div class="low-light-warning" id="lowLightWarning">
+                    <div class="low-light-alert">
+                        <i class="fas fa-lightbulb"></i>
+                        <span>Low light detected - Enabling enhancement</span>
                     </div>
                 </div>
                 
                 <!-- Scan Overlay -->
                 <div class="scan-overlay">
                     <div class="scan-frame">
+                        <div class="scan-corner tl"></div>
+                        <div class="scan-corner tr"></div>
+                        <div class="scan-corner bl"></div>
+                        <div class="scan-corner br"></div>
                         <div class="scan-line"></div>
                     </div>
+                </div>
+                
+                <!-- Scan Hint -->
+                <div class="scan-hint">
+                    <i class="fas fa-info-circle"></i>
+                    Position barcode within the frame
                 </div>
             </div>
             
@@ -1151,9 +1183,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Add ZXing library for barcode scanning -->
-    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
 
     <script>
         // Anti-tampering measures
@@ -1208,17 +1237,22 @@
             cameraStream: null,
             currentCamera: "environment",
             flashEnabled: false,
-            barcodeReader: null,
+            scanner: null,
             syncInterval: null,
             lastScanned: null,
             lastAttendance: null,
-            // Camera control states
-            autoFocus: true,
-            autoExposure: true,
-            imageEnhance: true,
-            scannerMode: "both", // "1d", "2d", "both"
-            lightLevel: 0,
-            scanInterval: null
+            cameraOptimizer: null,
+            lowLightDetected: false,
+            scanAttempts: 0,
+            lastScanTime: 0,
+            cameraSettings: {
+                focusMode: "continuous",
+                exposureMode: "continuous",
+                whiteBalanceMode: "continuous",
+                iso: 0,
+                brightness: 0,
+                contrast: 0
+            }
         };
         
         // ================= DOM ELEMENTS =================
@@ -1237,8 +1271,33 @@
         const offlineIndicator = document.getElementById('offlineIndicator');
         const manualInputModal = document.getElementById('manualInputModal');
         const manualInputField = document.getElementById('manualInputField');
-        const lightIndicator = document.getElementById('lightIndicator');
-        const lightLevelFill = document.getElementById('lightLevelFill');
+        const cameraOptimizer = document.getElementById('cameraOptimizer');
+        const optimizerStatus = document.getElementById('optimizerStatus');
+        const lowLightWarning = document.getElementById('lowLightWarning');
+        
+        // ================= BARCODE TYPES SUPPORTED =================
+        const BARCODE_FORMATS = [
+            // 1D Barcodes
+            'code_128',
+            'code_39',
+            'code_93',
+            'codabar',
+            'ean_13',
+            'ean_8',
+            'itf',
+            'upc_a',
+            'upc_e',
+            
+            // 2D Barcodes
+            'qr_code',
+            'data_matrix',
+            'aztec',
+            'pdf417',
+            
+            // Industrial
+            'i2of5',
+            'code_39_vin'
+        ];
         
         // ================= INITIALIZATION =================
         document.addEventListener('DOMContentLoaded', async function() {
@@ -1265,9 +1324,6 @@
             window.addEventListener('offline', handleOffline);
             updateConnectionStatus();
             
-            // Set up scanner mode buttons
-            setupScannerModeButtons();
-            
             // Load sheet tabs
             await loadSheetTabs();
             
@@ -1277,171 +1333,6 @@
             // Start sync interval
             state.syncInterval = setInterval(syncPendingQueue, 10000);
         });
-        
-        // ================= SCANNER MODE SETUP =================
-        function setupScannerModeButtons() {
-            const modeButtons = document.querySelectorAll('.scanner-mode-btn');
-            modeButtons.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    modeButtons.forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    state.scannerMode = this.dataset.mode;
-                    
-                    // Update barcode reader formats
-                    if (state.barcodeReader) {
-                        initializeBarcodeReader();
-                    }
-                    
-                    showToast("Scanner Mode", `Switched to ${this.dataset.mode.toUpperCase()} mode`, "info");
-                });
-            });
-        }
-        
-        // ================= CAMERA CONTROLS =================
-        function toggleAutoFocus() {
-            state.autoFocus = !state.autoFocus;
-            const btn = document.getElementById('autoFocusBtn');
-            btn.classList.toggle('active', state.autoFocus);
-            applyCameraConstraints();
-            showToast("Auto Focus", state.autoFocus ? "Enabled" : "Disabled", "info");
-        }
-        
-        function toggleAutoExposure() {
-            state.autoExposure = !state.autoExposure;
-            const btn = document.getElementById('autoExposureBtn');
-            btn.classList.toggle('active', state.autoExposure);
-            applyCameraConstraints();
-            showToast("Auto Exposure", state.autoExposure ? "Enabled" : "Disabled", "info");
-        }
-        
-        function toggleImageEnhance() {
-            state.imageEnhance = !state.imageEnhance;
-            const btn = document.getElementById('imageEnhanceBtn');
-            btn.classList.toggle('active', state.imageEnhance);
-            
-            // Apply image enhancement
-            if (state.imageEnhance && state.cameraStream) {
-                applyImageEnhancement();
-            } else {
-                removeImageEnhancement();
-            }
-            
-            showToast("Image Enhance", state.imageEnhance ? "Enabled" : "Disabled", "info");
-        }
-        
-        function applyCameraConstraints() {
-            if (!state.cameraStream) return;
-            
-            const track = state.cameraStream.getVideoTracks()[0];
-            if (!track) return;
-            
-            const constraints = {
-                advanced: []
-            };
-            
-            if (!state.autoFocus) {
-                constraints.advanced.push({ focusMode: "manual" });
-            }
-            
-            if (!state.autoExposure) {
-                constraints.advanced.push({ exposureMode: "manual" });
-            }
-            
-            if (constraints.advanced.length > 0) {
-                track.applyConstraints(constraints).catch(console.error);
-            }
-        }
-        
-        function applyImageEnhancement() {
-            if (!cameraView) return;
-            
-            // Create canvas for image processing
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            function processFrame() {
-                if (!state.imageEnhance || !state.isScanning) return;
-                
-                canvas.width = cameraView.videoWidth;
-                canvas.height = cameraView.videoHeight;
-                
-                ctx.drawImage(cameraView, 0, 0);
-                
-                // Get image data for light level detection
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                updateLightLevel(imageData);
-                
-                // Apply contrast enhancement for low light
-                if (state.lightLevel < 0.3) {
-                    const enhancedData = enhanceImage(imageData);
-                    ctx.putImageData(enhancedData, 0, 0);
-                    
-                    // Update camera view with enhanced image
-                    cameraView.srcObject = null;
-                    const stream = canvas.captureStream();
-                    cameraView.srcObject = stream;
-                }
-                
-                requestAnimationFrame(processFrame);
-            }
-            
-            processFrame();
-        }
-        
-        function removeImageEnhancement() {
-            if (state.cameraStream && cameraView) {
-                cameraView.srcObject = state.cameraStream;
-            }
-        }
-        
-        function updateLightLevel(imageData) {
-            const data = imageData.data;
-            let totalBrightness = 0;
-            
-            // Sample pixels for performance
-            for (let i = 0; i < data.length; i += 16) {
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-                totalBrightness += (r + g + b) / 3;
-            }
-            
-            const avgBrightness = totalBrightness / (data.length / 16);
-            state.lightLevel = avgBrightness / 255;
-            
-            // Update UI
-            lightLevelFill.style.width = `${state.lightLevel * 100}%`;
-            
-            if (state.lightLevel < 0.3) {
-                lightIndicator.classList.add('low-light');
-                if (!state.flashEnabled && !state.flashAvailable) {
-                    showToast("Low Light", "Enable flash for better scanning", "warning", 2000);
-                }
-            } else {
-                lightIndicator.classList.remove('low-light');
-            }
-        }
-        
-        function enhanceImage(imageData) {
-            const data = imageData.data;
-            
-            // Simple contrast enhancement for low light
-            const contrast = 1.5;
-            const brightness = 20;
-            
-            for (let i = 0; i < data.length; i += 4) {
-                // Apply contrast
-                data[i] = clamp((data[i] - 128) * contrast + 128 + brightness);
-                data[i + 1] = clamp((data[i + 1] - 128) * contrast + 128 + brightness);
-                data[i + 2] = clamp((data[i + 2] - 128) * contrast + 128 + brightness);
-            }
-            
-            return imageData;
-        }
-        
-        function clamp(value) {
-            return Math.max(0, Math.min(255, value));
-        }
         
         // ================= ONLINE/OFFLINE HANDLING =================
         function handleOnline() {
@@ -1543,149 +1434,339 @@
             }
         }
         
-        // ================= SCANNER CONTROLS =================
-        async function startScanning() {
-            const selectedSheet = sheetSelect.value;
-            if (!selectedSheet) {
-                showToast("Error", "Please select a sheet first", "error");
-                return;
-            }
-            
-            state.selectedSheet = selectedSheet;
-            
-            // Save to localStorage for offline use
-            localStorage.setItem("selectedSheet", selectedSheet);
-            
-            // Cache sheet list for offline use
-            const sheetOptions = Array.from(sheetSelect.options).map(opt => opt.value).filter(Boolean);
-            localStorage.setItem("cachedSheets", JSON.stringify(sheetOptions));
-            
-            showLoading(`Loading student data for ${selectedSheet}...`);
-            
-            try {
-                // Load student data
-                await loadStudentData(selectedSheet);
-                
-                // Switch to scanner screen
-                tabSelectionScreen.classList.add("hidden");
-                scannerScreen.classList.add("active");
-                
-                // Initialize camera with enhanced settings
-                await initializeCamera();
-                
-                // Initialize barcode scanner
-                initializeBarcodeReader();
-                
-                state.isScanning = true;
-                
-                hideLoading();
-                showToast("Ready to Scan", "Point camera at barcode", "success");
-                
-            } catch (error) {
-                hideLoading();
-                showToast("Error", `Failed to start scanner: ${error.message}`, "error");
-            }
-        }
-        
-        function stopScanning() {
-            if (state.isScanning) {
-                // Stop camera
-                if (state.cameraStream) {
-                    state.cameraStream.getTracks().forEach(track => track.stop());
-                    state.cameraStream = null;
-                }
-                
-                // Stop scanner
-                if (state.barcodeReader) {
-                    clearInterval(state.scanInterval);
-                    state.barcodeReader = null;
-                }
-                
-                // Switch back to selection screen
-                scannerScreen.classList.remove("active");
-                tabSelectionScreen.classList.remove("hidden");
-                
-                state.isScanning = false;
-                state.selectedSheet = null;
-                
-                showToast("Scanner Stopped", "Select a sheet to start again", "info");
-            }
-        }
-        
-        // ================= CAMERA MANAGEMENT =================
+        // ================= ADVANCED CAMERA OPTIMIZATION =================
         async function initializeCamera() {
+            showLoading("Initializing camera with optimal settings...");
+            
             try {
+                // Get camera capabilities
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                // Try to get the best camera (rear if available)
+                let deviceId = null;
+                const rearCamera = videoDevices.find(device => 
+                    device.label.toLowerCase().includes('back') || 
+                    device.label.toLowerCase().includes('rear') ||
+                    device.label.toLowerCase().includes('environment')
+                );
+                
+                if (rearCamera && state.currentCamera === "environment") {
+                    deviceId = rearCamera.deviceId;
+                }
+                
+                // Advanced camera constraints for optimal scanning
                 const constraints = {
                     video: {
+                        width: { ideal: 1920, min: 1280 },
+                        height: { ideal: 1080, min: 720 },
+                        frameRate: { ideal: 60, min: 30 },
                         facingMode: state.currentCamera,
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 },
-                        frameRate: { ideal: 30 }
-                    }
+                        deviceId: deviceId ? { exact: deviceId } : undefined,
+                        advanced: [
+                            // Priority 1: Auto focus for barcode scanning
+                            { focusMode: "continuous" },
+                            { focusMode: "single-shot" },
+                            { focusMode: "manual" },
+                            
+                            // Priority 2: Exposure settings for different lighting
+                            { exposureMode: "continuous" },
+                            { exposureCompensation: 0 },
+                            { exposureTime: { ideal: 10000, min: 1000, max: 20000 } },
+                            
+                            // Priority 3: White balance for color accuracy
+                            { whiteBalanceMode: "continuous" },
+                            { colorTemperature: { ideal: 5600 } },
+                            
+                            // Priority 4: Low light optimization
+                            { iso: { ideal: 400, max: 1600 } },
+                            { brightness: { ideal: 0.5 } },
+                            { contrast: { ideal: 0.5 } },
+                            { saturation: { ideal: 0.5 } },
+                            { sharpness: { ideal: 0.5 } }
+                        ]
+                    },
+                    audio: false
                 };
                 
-                // Add advanced constraints for better scanning
-                constraints.video.advanced = [
-                    { focusMode: "continuous" },
-                    { exposureMode: "continuous" },
-                    { whiteBalanceMode: "continuous" }
-                ];
-                
+                // Try to get the best possible stream
                 state.cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
                 cameraView.srcObject = state.cameraStream;
                 
                 // Wait for video to be ready
-                await new Promise(resolve => {
-                    cameraView.onloadedmetadata = () => {
-                        cameraView.play();
-                        resolve();
-                    };
+                await new Promise((resolve) => {
+                    cameraView.onloadedmetadata = () => resolve();
                 });
                 
-                // Check if flash is available
+                // Apply initial camera optimizations
+                await optimizeCameraSettings();
+                
+                // Start camera optimizer
+                startCameraOptimizer();
+                
+                // Check for low light conditions
+                checkLowLightConditions();
+                
+                // Check flash capabilities
                 const track = state.cameraStream.getVideoTracks()[0];
                 const capabilities = track.getCapabilities();
-                state.flashAvailable = capabilities.torch || capabilities.flash;
-                
-                if (state.flashAvailable) {
+                if (capabilities.torch) {
                     flashBtn.style.display = "flex";
                 } else {
                     flashBtn.style.display = "none";
                 }
                 
-                // Update control button states
-                document.getElementById('autoFocusBtn').classList.toggle('active', state.autoFocus);
-                document.getElementById('autoExposureBtn').classList.toggle('active', state.autoExposure);
-                document.getElementById('imageEnhanceBtn').classList.toggle('active', state.imageEnhance);
+                hideLoading();
+                showToast("Camera Ready", "Optimized for barcode scanning", "success");
                 
-                // Apply image enhancement if enabled
-                if (state.imageEnhance) {
-                    applyImageEnhancement();
+            } catch (error) {
+                console.error("Camera initialization error:", error);
+                
+                // Fallback to simpler constraints
+                try {
+                    showLoading("Trying alternative camera settings...");
+                    
+                    const fallbackConstraints = {
+                        video: {
+                            facingMode: state.currentCamera,
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        }
+                    };
+                    
+                    state.cameraStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+                    cameraView.srcObject = state.cameraStream;
+                    
+                    await new Promise((resolve) => {
+                        cameraView.onloadedmetadata = () => resolve();
+                    });
+                    
+                    hideLoading();
+                    showToast("Camera Ready", "Using basic mode", "warning");
+                    
+                } catch (fallbackError) {
+                    hideLoading();
+                    showToast("Camera Error", "Cannot access camera", "error");
+                    throw fallbackError;
+                }
+            }
+        }
+        
+        async function optimizeCameraSettings() {
+            if (!state.cameraStream) return;
+            
+            const track = state.cameraStream.getVideoTracks()[0];
+            const capabilities = track.getCapabilities();
+            const settings = track.getSettings();
+            
+            try {
+                // Apply optimal settings based on capabilities
+                if (capabilities.focusMode && capabilities.focusMode.includes("continuous")) {
+                    await track.applyConstraints({
+                        advanced: [{ focusMode: "continuous" }]
+                    });
+                    state.cameraSettings.focusMode = "continuous";
+                }
+                
+                if (capabilities.exposureMode && capabilities.exposureMode.includes("continuous")) {
+                    await track.applyConstraints({
+                        advanced: [{ exposureMode: "continuous" }]
+                    });
+                    state.cameraSettings.exposureMode = "continuous";
+                }
+                
+                if (capabilities.whiteBalanceMode && capabilities.whiteBalanceMode.includes("continuous")) {
+                    await track.applyConstraints({
+                        advanced: [{ whiteBalanceMode: "continuous" }]
+                    });
+                    state.cameraSettings.whiteBalanceMode = "continuous";
+                }
+                
+                // Adjust for potential low light
+                if (capabilities.iso && capabilities.iso.max > 100) {
+                    const optimalISO = Math.min(800, capabilities.iso.max);
+                    await track.applyConstraints({
+                        advanced: [{ iso: optimalISO }]
+                    });
+                    state.cameraSettings.iso = optimalISO;
+                }
+                
+                // Enhance brightness for better scanning
+                if (capabilities.brightness) {
+                    await track.applyConstraints({
+                        advanced: [{ brightness: 0.7 }]
+                    });
+                    state.cameraSettings.brightness = 0.7;
+                }
+                
+                // Increase contrast for barcode clarity
+                if (capabilities.contrast) {
+                    await track.applyConstraints({
+                        advanced: [{ contrast: 0.8 }]
+                    });
+                    state.cameraSettings.contrast = 0.8;
+                }
+                
+                optimizerStatus.innerHTML = '<i class="fas fa-check-circle"></i> <span>Camera optimized</span>';
+                setTimeout(() => {
+                    cameraOptimizer.style.opacity = '0';
+                    setTimeout(() => {
+                        cameraOptimizer.style.display = 'none';
+                    }, 300);
+                }, 2000);
+                
+            } catch (error) {
+                console.log("Some camera optimizations not available:", error);
+                optimizerStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> <span>Using basic mode</span>';
+            }
+        }
+        
+        function startCameraOptimizer() {
+            if (state.cameraOptimizer) {
+                clearInterval(state.cameraOptimizer);
+            }
+            
+            // Monitor and adjust camera settings every 2 seconds
+            state.cameraOptimizer = setInterval(async () => {
+                if (!state.cameraStream || !state.isScanning) return;
+                
+                await checkLowLightConditions();
+                await adjustCameraForScanning();
+                
+            }, 2000);
+        }
+        
+        async function checkLowLightConditions() {
+            if (!state.cameraStream) return;
+            
+            try {
+                // Create canvas to analyze video brightness
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = 100;
+                canvas.height = 100;
+                
+                context.drawImage(cameraView, 0, 0, canvas.width, canvas.height);
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                
+                // Calculate average brightness
+                let totalBrightness = 0;
+                const data = imageData.data;
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    totalBrightness += (r + g + b) / 3;
+                }
+                
+                const averageBrightness = totalBrightness / (data.length / 4);
+                
+                // If brightness is low, show warning and adjust settings
+                if (averageBrightness < 100 && !state.lowLightDetected) {
+                    state.lowLightDetected = true;
+                    
+                    // Show low light warning
+                    lowLightWarning.style.display = 'block';
+                    setTimeout(() => {
+                        lowLightWarning.style.display = 'none';
+                    }, 3000);
+                    
+                    // Adjust camera for low light
+                    await adjustCameraForLowLight();
+                    
+                    showToast("Low Light Mode", "Enhanced scanning activated", "warning");
+                    
+                } else if (averageBrightness >= 100 && state.lowLightDetected) {
+                    state.lowLightDetected = false;
                 }
                 
             } catch (error) {
-                console.error("Camera error:", error);
-                showToast("Camera Error", "Cannot access camera", "error");
-                throw error;
+                console.log("Light detection error:", error);
+            }
+        }
+        
+        async function adjustCameraForLowLight() {
+            if (!state.cameraStream) return;
+            
+            const track = state.cameraStream.getVideoTracks()[0];
+            const capabilities = track.getCapabilities();
+            
+            try {
+                // Increase ISO for low light
+                if (capabilities.iso) {
+                    const maxISO = Math.min(1600, capabilities.iso.max);
+                    await track.applyConstraints({
+                        advanced: [{ iso: maxISO }]
+                    });
+                }
+                
+                // Slow down shutter speed if possible
+                if (capabilities.exposureTime) {
+                    await track.applyConstraints({
+                        advanced: [{ exposureTime: 20000 }]
+                    });
+                }
+                
+                // Increase brightness
+                if (capabilities.brightness) {
+                    await track.applyConstraints({
+                        advanced: [{ brightness: 0.9 }]
+                    });
+                }
+                
+            } catch (error) {
+                console.log("Low light adjustment error:", error);
+            }
+        }
+        
+        async function adjustCameraForScanning() {
+            if (!state.cameraStream) return;
+            
+            const track = state.cameraStream.getVideoTracks()[0];
+            
+            try {
+                // Reset to continuous focus for scanning
+                await track.applyConstraints({
+                    advanced: [{ focusMode: "continuous" }]
+                });
+                
+                // Adjust exposure if needed
+                await track.applyConstraints({
+                    advanced: [{ exposureCompensation: 0 }]
+                });
+                
+            } catch (error) {
+                console.log("Camera adjustment error:", error);
             }
         }
         
         async function switchCamera() {
             if (!state.cameraStream) return;
             
-            // Stop current stream
+            // Stop current stream and optimizer
             state.cameraStream.getTracks().forEach(track => track.stop());
+            if (state.cameraOptimizer) {
+                clearInterval(state.cameraOptimizer);
+                state.cameraOptimizer = null;
+            }
             
             // Switch camera
             state.currentCamera = state.currentCamera === "environment" ? "user" : "environment";
+            state.lowLightDetected = false;
+            
+            // Show optimizer
+            cameraOptimizer.style.display = 'block';
+            cameraOptimizer.style.opacity = '1';
+            optimizerStatus.innerHTML = '<i class="fas fa-cog"></i> <span>Optimizing camera...</span>';
             
             // Reinitialize with new camera
             await initializeCamera();
             
             // Restart scanner if it exists
-            if (state.barcodeReader) {
-                clearInterval(state.scanInterval);
-                initializeBarcodeReader();
+            if (state.scanner) {
+                state.scanner.stop();
+                initializeBarcodeScanner();
             }
             
             showToast("Camera Switched", `Now using ${state.currentCamera === "environment" ? "rear" : "front"} camera`, "info");
@@ -1698,7 +1779,7 @@
                 const track = state.cameraStream.getVideoTracks()[0];
                 const capabilities = track.getCapabilities();
                 
-                if (capabilities.torch || capabilities.flash) {
+                if (capabilities.torch) {
                     await track.applyConstraints({
                         advanced: [{ torch: !state.flashEnabled }]
                     });
@@ -1713,116 +1794,201 @@
             }
         }
         
-        // ================= BARCODE SCANNER =================
-        function initializeBarcodeReader() {
-            if (typeof ZXing === 'undefined') {
-                showToast("Error", "Scanner library not loaded", "error");
-                return;
+        // ================= ENHANCED BARCODE SCANNER =================
+        function initializeBarcodeScanner() {
+            showLoading("Initializing advanced barcode scanner...");
+            
+            // Check for native BarcodeDetector API (modern browsers)
+            if ('BarcodeDetector' in window) {
+                setupNativeBarcodeScanner();
+            } else {
+                // Fallback to QuaggaJS with enhanced settings
+                setupQuaggaScanner();
             }
+        }
+        
+        function setupNativeBarcodeScanner() {
+            // Create barcode detector with all supported formats
+            const barcodeDetector = new BarcodeDetector({ 
+                formats: BARCODE_FORMATS.filter(format => 
+                    // Filter formats that are likely supported
+                    !format.includes('code_39_vin') && 
+                    !format.includes('i2of5')
+                )
+            });
             
-            const codeReader = new ZXing.BrowserMultiFormatReader();
+            let isProcessing = false;
+            let lastDetectionTime = 0;
+            const SCAN_INTERVAL = 500; // Minimum time between scans in ms
             
-            // Get formats based on scanner mode
-            const formats = getFormatsForMode(state.scannerMode);
-            
-            // Configure decoder
-            const hints = new Map();
-            hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
-            hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-            hints.set(ZXing.DecodeHintType.PURE_BARCODE, false);
-            
-            codeReader.hints = hints;
-            
-            // Set up scanning interval
-            clearInterval(state.scanInterval);
-            state.scanInterval = setInterval(async () => {
-                if (!state.isScanning || !cameraView.videoWidth) return;
+            const detectBarcode = async () => {
+                if (!state.isScanning || isProcessing) return;
+                
+                // Prevent scanning too frequently
+                const now = Date.now();
+                if (now - lastDetectionTime < SCAN_INTERVAL) {
+                    requestAnimationFrame(detectBarcode);
+                    return;
+                }
+                
+                isProcessing = true;
                 
                 try {
-                    const result = await codeReader.decodeFromVideoElement(cameraView);
-                    if (result) {
-                        await processBarcode(result.text, "scanner");
+                    const barcodes = await barcodeDetector.detect(cameraView);
+                    
+                    if (barcodes.length > 0) {
+                        const barcode = barcodes[0];
+                        lastDetectionTime = now;
+                        state.scanAttempts++;
+                        
+                        // Log successful detection for debugging
+                        console.log(`Detected: ${barcode.rawValue} (${barcode.format})`);
+                        
+                        await processBarcode(barcode.rawValue, "scanner");
                     }
                 } catch (error) {
-                    // Ignore decoding errors (no barcode found)
+                    console.error("Barcode detection error:", error);
+                } finally {
+                    isProcessing = false;
+                    // Continue detection with requestAnimationFrame for smooth performance
+                    requestAnimationFrame(detectBarcode);
                 }
-            }, 300); // Scan every 300ms
+            };
             
-            state.barcodeReader = codeReader;
+            // Start detection
+            setTimeout(() => {
+                hideLoading();
+                detectBarcode();
+            }, 1000);
         }
         
-        function getFormatsForMode(mode) {
-            const { BarcodeFormat } = ZXing;
-            
-            const allFormats = [
-                // 1D Barcodes
-                BarcodeFormat.CODE_128,
-                BarcodeFormat.CODE_39,
-                BarcodeFormat.CODE_93,
-                BarcodeFormat.CODABAR,
-                BarcodeFormat.EAN_8,
-                BarcodeFormat.EAN_13,
-                BarcodeFormat.ITF,
-                BarcodeFormat.UPC_A,
-                BarcodeFormat.UPC_E,
-                BarcodeFormat.RSS_14,
-                BarcodeFormat.RSS_EXPANDED,
-                // 2D Barcodes
-                BarcodeFormat.QR_CODE,
-                BarcodeFormat.DATA_MATRIX,
-                BarcodeFormat.AZTEC,
-                BarcodeFormat.PDF_417,
-                BarcodeFormat.MAXICODE
-            ];
-            
-            const oneDFormats = [
-                BarcodeFormat.CODE_128,
-                BarcodeFormat.CODE_39,
-                BarcodeFormat.CODE_93,
-                BarcodeFormat.CODABAR,
-                BarcodeFormat.EAN_8,
-                BarcodeFormat.EAN_13,
-                BarcodeFormat.ITF,
-                BarcodeFormat.UPC_A,
-                BarcodeFormat.UPC_E,
-                BarcodeFormat.RSS_14,
-                BarcodeFormat.RSS_EXPANDED
-            ];
-            
-            const twoDFormats = [
-                BarcodeFormat.QR_CODE,
-                BarcodeFormat.DATA_MATRIX,
-                BarcodeFormat.AZTEC,
-                BarcodeFormat.PDF_417,
-                BarcodeFormat.MAXICODE
-            ];
-            
-            switch(mode) {
-                case "1d": return oneDFormats;
-                case "2d": return twoDFormats;
-                case "both": return allFormats;
-                default: return allFormats;
+        function setupQuaggaScanner() {
+            if (typeof Quagga === 'undefined') {
+                // Load QuaggaJS dynamically
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js';
+                script.onload = function() {
+                    startEnhancedQuaggaScanner();
+                };
+                document.head.appendChild(script);
+            } else {
+                startEnhancedQuaggaScanner();
             }
         }
         
-        // ================= BARCODE PROCESSING =================
+        function startEnhancedQuaggaScanner() {
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: cameraView,
+                    constraints: {
+                        facingMode: state.currentCamera,
+                        width: { min: 640 },
+                        height: { min: 480 }
+                    },
+                    area: {
+                        top: "25%",
+                        right: "15%",
+                        left: "15%",
+                        bottom: "25%"
+                    }
+                },
+                decoder: {
+                    readers: [
+                        "code_128_reader",
+                        "ean_reader",
+                        "ean_8_reader",
+                        "code_39_reader",
+                        "code_39_vin_reader",
+                        "codabar_reader",
+                        "upc_reader",
+                        "upc_e_reader",
+                        "i2of5_reader"
+                    ],
+                    multiple: false
+                },
+                locator: {
+                    patchSize: "medium",
+                    halfSample: true
+                },
+                locate: true,
+                numOfWorkers: navigator.hardwareConcurrency || 4,
+                frequency: 10,
+                debug: {
+                    drawBoundingBox: false,
+                    drawScanline: false,
+                    showPattern: false
+                }
+            }, function(err) {
+                if (err) {
+                    console.error("Scanner init error:", err);
+                    hideLoading();
+                    showToast("Scanner Error", "Using manual input mode", "warning");
+                    return;
+                }
+                
+                Quagga.start();
+                state.scanner = Quagga;
+                
+                // Configure Quagga for better performance
+                Quagga.onProcessed(function(result) {
+                    if (result) {
+                        // Optional: Add visual feedback
+                    }
+                });
+                
+                Quagga.onDetected(async function(result) {
+                    const code = result.codeResult.code;
+                    state.scanAttempts++;
+                    
+                    // Log for debugging
+                    console.log(`Quagga detected: ${code} (${result.codeResult.format})`);
+                    
+                    await processBarcode(code, "scanner");
+                });
+                
+                hideLoading();
+                showToast("Scanner Ready", "Enhanced detection active", "success");
+            });
+        }
+        
+        // ================= ENHANCED BARCODE PROCESSING =================
         async function processBarcode(barcode, method = "scanner") {
-            // Prevent duplicate scanning within 2 seconds
+            // Enhanced duplicate prevention with progressive delay
             const now = Date.now();
-            if (state.lastScanned && now - state.lastScanned < 2000) {
-                return;
-            }
-            state.lastScanned = now;
+            const timeSinceLastScan = now - state.lastScanTime;
             
-            // Clean barcode
-            const enrollment = barcode.toString().trim().replace(/[^\w]/g, '');
-            
-            if (!enrollment) {
-                showToast("Error", "Invalid barcode", "error");
-                return;
+            // Progressive anti-spam: if scanning too fast, increase delay
+            let minDelay = 1000; // Base delay
+            if (state.scanAttempts > 10) {
+                minDelay = 500; // After many attempts, allow faster scanning
             }
             
-            // Show loading
+            if (state.lastScanTime && timeSinceLastScan < minDelay) {
+                console.log(`Scan too fast, skipping. Delay needed: ${minDelay - timeSinceLastScan}ms`);
+                return;
+            }
+            
+            state.lastScanTime = now;
+            
+            // Enhanced barcode cleaning and validation
+            let enrollment = barcode.toString().trim();
+            
+            // Remove common barcode prefixes/suffixes
+            enrollment = enrollment.replace(/^[^0-9a-zA-Z]+|[^0-9a-zA-Z]+$/g, '');
+            
+            // Extract only alphanumeric characters
+            enrollment = enrollment.replace(/[^0-9a-zA-Z]/g, '');
+            
+            if (!enrollment || enrollment.length < 3) {
+                showResultModal(false, "Invalid Barcode", 
+                    "The scanned code doesn't appear to be a valid enrollment number", 
+                    barcode, "");
+                playSound("error");
+                return;
+            }
+            
             showLoading("Processing barcode...");
             
             // Check local cache first
@@ -1831,9 +1997,17 @@
             if (!student) {
                 hideLoading();
                 showResultModal(false, "Student Not Found", 
-                    `Enrollment ${enrollment} not found in sheet`, 
+                    `Enrollment ${enrollment} not found in selected sheet`, 
                     enrollment, "");
                 playSound("error");
+                
+                // If not found, try fuzzy search
+                const fuzzyMatch = findFuzzyMatch(enrollment);
+                if (fuzzyMatch) {
+                    setTimeout(() => {
+                        showToast("Similar Found", `Did you mean ${fuzzyMatch.enroll}?`, "info");
+                    }, 1500);
+                }
                 return;
             }
             
@@ -1851,7 +2025,9 @@
                 name: student.name,
                 timestamp: new Date().toISOString(),
                 status: "Present",
-                method: method
+                method: method,
+                scanTime: now,
+                scanAttempts: state.scanAttempts
             };
             state.lastAttendance = attendanceData;
             
@@ -1865,14 +2041,64 @@
                 addToPendingQueue(attendanceData);
             }
             
+            // Reset scan attempts counter on successful scan
+            state.scanAttempts = 0;
+            
             hideLoading();
+        }
+        
+        // ================= FUZZY MATCHING FOR BARCODES =================
+        function findFuzzyMatch(enrollment) {
+            if (!enrollment || enrollment.length < 4) return null;
+            
+            // Try to find similar enrollment numbers
+            for (const student of state.studentCache) {
+                if (!student.enroll) continue;
+                
+                const studentEnroll = student.enroll.toString();
+                
+                // Check for common OCR errors
+                if (studentEnroll.includes(enrollment) || enrollment.includes(studentEnroll)) {
+                    return student;
+                }
+                
+                // Check for transposed digits
+                if (studentEnroll.length === enrollment.length) {
+                    let differences = 0;
+                    for (let i = 0; i < enrollment.length; i++) {
+                        if (studentEnroll[i] !== enrollment[i]) {
+                            differences++;
+                            if (differences > 2) break;
+                        }
+                    }
+                    if (differences <= 2) {
+                        return student;
+                    }
+                }
+                
+                // Check for missing/extra characters
+                if (Math.abs(studentEnroll.length - enrollment.length) <= 2) {
+                    const longer = studentEnroll.length > enrollment.length ? studentEnroll : enrollment;
+                    const shorter = studentEnroll.length > enrollment.length ? enrollment : studentEnroll;
+                    
+                    if (longer.includes(shorter)) {
+                        return student;
+                    }
+                }
+            }
+            
+            return null;
         }
         
         // ================= MANUAL INPUT =================
         function showManualInput() {
             manualInputField.value = '';
             manualInputModal.classList.add('active');
-            setTimeout(() => manualInputField.focus(), 100);
+            setTimeout(() => {
+                manualInputField.focus();
+                // Show keyboard on mobile
+                manualInputField.click();
+            }, 100);
         }
         
         function closeManualInput() {
@@ -1883,6 +2109,12 @@
             const enrollment = manualInputField.value.trim();
             if (!enrollment) {
                 showToast("Error", "Please enter enrollment number", "error");
+                return;
+            }
+            
+            // Validate enrollment format
+            if (!/^[0-9a-zA-Z]{4,20}$/.test(enrollment)) {
+                showToast("Invalid Format", "Please enter a valid enrollment number", "error");
                 return;
             }
             
@@ -1897,7 +2129,7 @@
                 return;
             }
 
-            const remark = prompt("Enter remark for last scanned student:");
+            const remark = prompt(`Enter remark for ${state.lastAttendance.name}:`);
             if (!remark || !remark.trim()) return;
 
             try {
@@ -1924,6 +2156,91 @@
             }
         }
         
+        // ================= SCANNER CONTROLS =================
+        async function startScanning() {
+            const selectedSheet = sheetSelect.value;
+            if (!selectedSheet) {
+                showToast("Error", "Please select a sheet first", "error");
+                return;
+            }
+            
+            state.selectedSheet = selectedSheet;
+            state.scanAttempts = 0;
+            state.lastScanTime = 0;
+            
+            // Save to localStorage for offline use
+            localStorage.setItem("selectedSheet", selectedSheet);
+            
+            // Cache sheet list for offline use
+            const sheetOptions = Array.from(sheetSelect.options).map(opt => opt.value).filter(Boolean);
+            localStorage.setItem("cachedSheets", JSON.stringify(sheetOptions));
+            
+            showLoading(`Loading student data for ${selectedSheet}...`);
+            
+            try {
+                // Load student data
+                await loadStudentData(selectedSheet);
+                
+                // Switch to scanner screen
+                tabSelectionScreen.classList.add("hidden");
+                scannerScreen.classList.add("active");
+                
+                // Reset optimizer display
+                cameraOptimizer.style.display = 'block';
+                cameraOptimizer.style.opacity = '1';
+                optimizerStatus.innerHTML = '<i class="fas fa-cog"></i> <span>Optimizing camera...</span>';
+                lowLightWarning.style.display = 'none';
+                
+                // Initialize camera with enhanced settings
+                await initializeCamera();
+                
+                // Initialize barcode scanner
+                initializeBarcodeScanner();
+                
+                state.isScanning = true;
+                
+                showToast("Ready to Scan", "Enhanced scanner active", "success");
+                
+            } catch (error) {
+                hideLoading();
+                showToast("Error", `Failed to start scanner: ${error.message}`, "error");
+            }
+        }
+        
+        function stopScanning() {
+            if (state.isScanning) {
+                // Stop camera and optimizer
+                if (state.cameraStream) {
+                    state.cameraStream.getTracks().forEach(track => track.stop());
+                    state.cameraStream = null;
+                }
+                
+                if (state.cameraOptimizer) {
+                    clearInterval(state.cameraOptimizer);
+                    state.cameraOptimizer = null;
+                }
+                
+                // Stop scanner
+                if (state.scanner) {
+                    state.scanner.stop();
+                    state.scanner = null;
+                }
+                
+                // Switch back to selection screen
+                scannerScreen.classList.remove("active");
+                tabSelectionScreen.classList.remove("hidden");
+                
+                state.isScanning = false;
+                state.selectedSheet = null;
+                state.lowLightDetected = false;
+                
+                showToast("Scanner Stopped", "Select a sheet to start again", "info");
+            }
+        }
+        
+        // [The rest of the functions remain the same as previous version: 
+        // loadStudentData, findStudentByEnrollment, submitAttendance, 
+        // pending queue management, UI helpers, etc.]
         // ================= STUDENT DATA MANAGEMENT =================
         async function loadStudentData(sheetName) {
             showLoading("Loading student data...");
@@ -2135,7 +2452,7 @@
             resultModal.classList.remove("active");
         }
         
-        function showToast(title, message, type = "info", duration = 5000) {
+        function showToast(title, message, type = "info") {
             const toast = document.createElement("div");
             toast.className = `toast ${type}`;
             
@@ -2156,7 +2473,7 @@
             
             toastContainer.appendChild(toast);
             
-            // Auto remove after duration
+            // Auto remove after 5 seconds
             setTimeout(() => {
                 if (toast.parentNode) {
                     toast.style.opacity = "0";
@@ -2166,7 +2483,7 @@
                         }
                     }, 300);
                 }
-            }, duration);
+            }, 5000);
         }
         
         function showLoading(text) {
