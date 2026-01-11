@@ -39,7 +39,7 @@
             -webkit-context-menu: none;
             -moz-context-menu: none;
             -ms-context-menu: none;
-            context-menu: none;
+            -context-menu: none;
         }
         
         :root {
@@ -57,19 +57,20 @@
             --safe-area-inset-bottom: env(safe-area-inset-bottom);
         }
         
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--dark-bg);
-            color: var(--text-light);
-            height: 100vh;
-            height: -webkit-fill-available;
-            height: calc(var(--vh, 1vh) * 100);
-            overflow: hidden;
-            position: fixed;
-            width: 100%;
-            padding-top: var(--safe-area-inset-top);
-            padding-bottom: var(--safe-area-inset-bottom);
-        }
+       body {
+    font-family: 'Inter', sans-serif;
+    background: var(--dark-bg);
+    color: var(--text-light);
+    height: 100vh;
+    height: -webkit-fill-available;
+    height: calc(var(--vh, 1vh) * 100);
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
+    padding-top: var(--safe-area-inset-top);
+    padding-bottom: var(--safe-area-inset-bottom);
+}
+
         
         /* Main Container */
         .container {
@@ -77,8 +78,14 @@
             flex-direction: column;
             height: 100%;
             position: relative;
+            overflow-y: auto;
+           -webkit-overflow-scrolling: touch;
         }
-        
+        .scanner-screen {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
         /* Header */
         .header {
             background: var(--card-bg);
