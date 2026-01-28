@@ -426,6 +426,134 @@ h1 {
     padding: 14px 18px;
   }
 }
+
+
+
+  /* =========================
+   Mobile UX Improvements
+   ========================= */
+
+/* Prevent horizontal scroll on mobile */
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Better vertical centering on small height screens */
+@media (max-height: 700px) {
+  body {
+    align-items: flex-start;
+    padding-top: 30px;
+    padding-bottom: 30px;
+  }
+}
+
+/* Improve container fit on small screens */
+@media (max-width: 480px) {
+  .login-container {
+    max-width: 100%;
+    padding: 12px;
+  }
+
+  .login-card {
+    padding: 24px 18px;
+    border-radius: 16px;
+  }
+
+  .header {
+    margin-bottom: 24px;
+  }
+
+  .logo {
+    gap: 8px;
+  }
+
+  .logo-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 18px;
+  }
+
+  h1 {
+    font-size: 22px;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .input-group {
+    margin-bottom: 20px;
+  }
+
+  .input-label {
+    font-size: 13px;
+  }
+
+  .input-field {
+    padding: 14px 16px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+
+  /* Bigger tap target for mobile */
+  .login-button {
+    padding: 16px;
+    font-size: 15px;
+    border-radius: 10px;
+  }
+
+  .login-button i {
+    font-size: 14px;
+  }
+
+  .error-message {
+    font-size: 13px;
+    margin-top: 16px;
+    text-align: center;
+  }
+
+  .footer {
+    margin-top: 22px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .footer p {
+    margin: 4px 0;
+  }
+}
+
+/* Disable hover-only effects on touch devices */
+@media (hover: none) {
+  .login-card:hover {
+    transform: none;
+    box-shadow: var(--shadow-glow), 0 15px 35px rgba(0, 0, 0, 0.5);
+  }
+
+  .login-button:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+/* Loader scaling for mobile */
+@media (max-width: 480px) {
+  .neon-loader {
+    width: 90px;
+    height: 90px;
+  }
+
+  .loader-text {
+    font-size: 14px;
+  }
+}
+
+
+  
 </style>
 </head>
 
@@ -694,4 +822,5 @@ inputs.forEach(input => {
 </script>
 
 </body>
+
 </html>
